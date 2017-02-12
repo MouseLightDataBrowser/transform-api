@@ -1,19 +1,11 @@
 "use strict";
 let typeDefinitions = `    
-type Task {
+type Tracing {
   id: String!
-  name: String!
-  description: String!
-  script: String!
-  interpreter: String!
-  args: String!
-  created_at: String
-  updated_at: String
-  deleted_at: String
 }
 
 type Query {
-     tasks: [Task!]!
+     tracings: [Tracing!]!
 }
 
 type Mutation {

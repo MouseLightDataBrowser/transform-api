@@ -7,6 +7,8 @@ import serverConfiguration from "../config/server.config";
 
 import {graphQLMiddleware, graphiQLMiddleware} from "./graphql/middleware/graphQLMiddleware";
 
+import * as db from "./models/index";
+
 const config = serverConfiguration();
 
 const PORT = process.env.API_PORT || config.port;
@@ -22,3 +24,19 @@ app.use(config.graphQlEndpoint, graphQLMiddleware());
 app.use(config.graphiQlEndpoint, graphiQLMiddleware(config));
 
 app.listen(PORT, () => debug(`API Server is now running on http://localhost:${PORT}`));
+
+sync();
+
+function sync() {
+    db.sequelize.sync().then(function() {
+        app.locals.dbready = true;
+
+        db.StructureIdentifier.populateDefault().then(function() {
+            console.log("Successful database sync.");
+        });
+    }).catch(function(err){
+        console.log("Failed database sync.");
+        console.log(err);
+        setTimeout(sync, 5000);
+    });
+}

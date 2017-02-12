@@ -8,9 +8,15 @@ const env       = process.env.NODE_ENV || "development";
 const config    = require(__dirname + "/../../config/database.config.json")[env];
 
 let sequelize;
-let db = {
-    sequelize: null,
-    Sequelize: null
+
+interface ISequelizeDatabase {
+    sequelize?: any;
+    Sequelize?: any;
+    Tracing?: any;
+    StructureIdentifier?: any;
+}
+
+let db: ISequelizeDatabase = {
 };
 
 if (config.use_env_constiable) {
@@ -38,4 +44,4 @@ Object.keys(db).forEach(function(modelName) {
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
-module.exports = db;
+export = db;

@@ -1,26 +1,26 @@
-'use strict';
+"use strict";
 
-module.exports = function(sequelize, DataTypes) {
-    var Tracing = sequelize.define('Tracing', {
+export = function (sequelize, DataTypes) {
+    const Tracing = sequelize.define("Tracing", {
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4
         },
         // reference to external sample database entry
-        neuronId:  DataTypes.UUID,
+        neuronId: DataTypes.UUID,
         filename: {
             type: DataTypes.TEXT,
-            defaultValue: ''
+            defaultValue: ""
         },
         annotator: {
             type: DataTypes.TEXT,
-            defaultValue: ''
+            defaultValue: ""
         },
         // comment lines found in SWC file
         fileComments: {
             type: DataTypes.TEXT,
-            defaultValue: ''
+            defaultValue: ""
         },
         // Janelia offset defined in file comments
         offsetX: {
@@ -37,14 +37,14 @@ module.exports = function(sequelize, DataTypes) {
         }
     }, {
         classMethods: {
-            associate: function(models) {
-                Tracing.hasMany(models.TracingNode, {foreignKey: 'tracingId', as: 'nodes'});
-                Tracing.belongsTo(models.StructureIdentifier, {foreignKey: 'structureIdentifierId'});
+            associate: function (models) {
+                Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "nodes"});
+                Tracing.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
             }
         },
         timestamps: true,
         paranoid: true
     });
-    
+
     return Tracing;
 };
