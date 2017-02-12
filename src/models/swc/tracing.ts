@@ -1,7 +1,8 @@
 "use strict";
+export const TableName = "Tracing";
 
-export = function (sequelize, DataTypes) {
-    const Tracing = sequelize.define("Tracing", {
+export function sequelizeImport(sequelize, DataTypes) {
+    const Tracing = sequelize.define(TableName, {
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
@@ -47,4 +48,4 @@ export = function (sequelize, DataTypes) {
     });
 
     return Tracing;
-};
+}

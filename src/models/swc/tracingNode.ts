@@ -1,7 +1,9 @@
-'use strict';
+"use strict";
 
-module.exports = function(sequelize, DataTypes) {
-    var TracingNode = sequelize.define('TracingNode', {
+export const TableName = "TracingNode";
+
+export function sequelizeImport(sequelize, DataTypes) {
+    const TracingNode = sequelize.define(TableName, {
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
@@ -15,14 +17,14 @@ module.exports = function(sequelize, DataTypes) {
         parentNumber: DataTypes.INTEGER
     }, {
         classMethods: {
-            associate: function(models) {
-                TracingNode.belongsTo(models.StructureIdentifier, {foreignKey: 'structureIdentifierId'});
-                TracingNode.belongsTo(models.Tracing, {foreignKey: 'tracingId'});
+            associate: function (models) {
+                TracingNode.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
+                TracingNode.belongsTo(models.Tracing, {foreignKey: "tracingId"});
             }
         },
         timestamps: true,
         paranoid: true
     });
-    
+
     return TracingNode;
 };

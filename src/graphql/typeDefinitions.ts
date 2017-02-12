@@ -1,6 +1,12 @@
 let typeDefinitions = `    
 type Tracing {
   id: String!
+  filename: String
+  annotator: String
+  fileComments: String
+  offsetX: Float
+  offsetY: Float
+  offsetZ: Float
 }
 
 type Query {

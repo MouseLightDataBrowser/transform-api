@@ -2,7 +2,7 @@ const debug = require("debug")("ndb:transform:context");
 
 import {ITracing} from "../models";
 
-import * as db from "../models/index";
+import * as db from "../models/databaseConnector";
 
 export interface IGraphQLServerContext {
     getTracings(): Promise<ITracing[]>;
@@ -10,7 +10,6 @@ export interface IGraphQLServerContext {
 
 export class GraphQLServerContext implements IGraphQLServerContext {
     public async getTracings(): Promise<ITracing[]> {
-        let y = await  db.Tracing.findAll({});
-        return y;
+        return db.Tracing.findAll({});
     }
 }

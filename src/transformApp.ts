@@ -7,7 +7,7 @@ import serverConfiguration from "../config/server.config";
 
 import {graphQLMiddleware, graphiQLMiddleware} from "./graphql/middleware/graphQLMiddleware";
 
-import * as db from "./models/index";
+import * as db from "./models/databaseConnector";
 
 const config = serverConfiguration();
 
