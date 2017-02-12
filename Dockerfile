@@ -4,9 +4,9 @@ RUN cd /tmp; wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-
 RUN cd /tmp; tar xvzf hdf5-1.10.0-patch1.tar.gz
 RUN cd /tmp/hdf5-1.10.0-patch1; ./configure --prefix=/usr/local --enable-cxx
 RUN cd /tmp/hdf5-1.10.0-patch1; make
-RUN cd /tmp/hdf5-1.10.0-patch1; make check
+# RUN cd /tmp/hdf5-1.10.0-patch1; make check
 RUN cd /tmp/hdf5-1.10.0-patch1; make install
-RUN cd /tmp/hdf5-1.10.0-patch1; make check-install
+# RUN cd /tmp/hdf5-1.10.0-patch1; make check-install
 
 # Bundle app source
 COPY . /app
@@ -16,6 +16,6 @@ RUN rm -rf /app/node_modules
 
 # Install production app dependencies
 RUN cd /app; npm install -g yarn
-RUN cd /app; yarn
+#RUN cd /app; yarn install
 
 #EXPOSE  9654

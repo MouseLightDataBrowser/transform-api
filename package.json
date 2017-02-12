@@ -15,6 +15,7 @@
     "graphql-subscriptions": "^0.3.0",
     "graphql-tools": "^0.10.0",
     "hdf5": "git+https://github.com/pedson/hdf5.node.git",
+    "pg": "^6.1.2",
     "sequelize": "^3.30.2"
   },
   "devDependencies": {
