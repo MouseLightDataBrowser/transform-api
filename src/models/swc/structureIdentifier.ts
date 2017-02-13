@@ -1,5 +1,3 @@
-"use strict";
-
 export const TableName = "StructureIdentifier";
 
 export function sequelizeImport(sequelize, DataTypes) {

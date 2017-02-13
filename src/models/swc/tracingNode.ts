@@ -1,5 +1,3 @@
-"use strict";
-
 export const TableName = "TracingNode";
 
 export function sequelizeImport(sequelize, DataTypes) {
@@ -27,4 +25,4 @@ export function sequelizeImport(sequelize, DataTypes) {
     });
 
     return TracingNode;
-};
+}
