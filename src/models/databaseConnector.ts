@@ -4,7 +4,7 @@ const debug = require("debug")("ndb:transform:database-connector");
 
 import {loadModels} from "./modelLoader";
 
-const config = require(__dirname + "/../../config/database.config.json");
+const config = require(__dirname + "/../config/database.config");
 
 export interface ISampleDatabaseModels {
     BrainArea?: any

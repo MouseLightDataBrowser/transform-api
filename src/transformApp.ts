@@ -3,7 +3,7 @@ import * as bodyParser from "body-parser";
 
 const debug = require("debug")("ndb:transform:server");
 
-import serverConfiguration from "../config/server.config";
+import serverConfiguration from "./config/server.config";
 
 import {graphQLMiddleware, graphiQLMiddleware} from "./graphql/middleware/graphQLMiddleware";
 

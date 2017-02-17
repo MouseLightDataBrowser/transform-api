@@ -1,4 +1,4 @@
-{
+export = {
   "sample": {
     "development": {
       "username": "postgres",
