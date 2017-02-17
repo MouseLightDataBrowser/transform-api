@@ -14,9 +14,9 @@ export function loadModels<T>(db: ISequelizeDatabase<T>, modelLocation: string) 
         db.models[model.name] = model;
     });
 
-    Object.keys(db).forEach(modelName => {
-        if (db[modelName].associate) {
-            db[modelName].associate(db);
+    Object.keys(db.models).forEach(modelName => {
+        if (db.models[modelName].associate) {
+            db.models[modelName].associate(db.models);
         }
     });
 

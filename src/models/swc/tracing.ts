@@ -1,3 +1,18 @@
+import {IJaneliaTracingNode} from "./tracingNode";
+
+export interface IJaneliaTracing {
+    id: string;
+    neuronId: string;
+    filename: string;
+    annotator: string;
+    fileComments: string;
+    offsetX: number;
+    offsetY: number;
+    offsetZ: number;
+
+    getNodes(): IJaneliaTracingNode[];
+}
+
 export const TableName = "Tracing";
 
 export function sequelizeImport(sequelize, DataTypes) {
@@ -37,8 +52,8 @@ export function sequelizeImport(sequelize, DataTypes) {
         }
     }, {
         classMethods: {
-            associate: function (models) {
-                Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "nodes"});
+            associate: models => {
+                Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "Nodes"});
                 Tracing.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
             }
         },

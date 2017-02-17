@@ -270,7 +270,7 @@ graphql@^0.9.1:
 
 "hdf5@git+https://github.com/pedson/hdf5.node.git":
   version "0.2.2"
-  resolved "git+https://github.com/pedson/hdf5.node.git#c89e64568ed08922617e1a1beaca00d321c74627"
+  resolved "git+https://github.com/pedson/hdf5.node.git#b58a1f7d2fb044ee8f36172803ac62bf2379390e"
 
 http-errors@~1.5.1:
   version "1.5.1"

@@ -12,15 +12,15 @@ export function sequelizeImport(sequelize, DataTypes) {
         mutable: {type: DataTypes.BOOLEAN, defaultValue: true}
     }, {
         classMethods: {
-            associate: function (models) {
-                StructureIdentifier.hasMany(models.TracingNode, {foreignKey: "structureIdentifierId", as: "nodes"});
+            associate: models => {
+                StructureIdentifier.hasMany(models.TracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
             }
         },
         timestamps: true,
         paranoid: true
     });
 
-    StructureIdentifier.populateDefault = function () {
+    StructureIdentifier.populateDefault = () => {
         return populateDefault(StructureIdentifier);
     };
 

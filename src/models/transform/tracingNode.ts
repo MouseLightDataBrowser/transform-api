@@ -1,12 +1,6 @@
-export interface IJaneliaTracingNode {
+export interface ITracingNode {
     id: string;
     tracingId: string;
-    sampleNumber: number;
-    x: number;
-    y: number;
-    z: number;
-    radius: number;
-    parentNumber: number;
 }
 
 export const TableName = "TracingNode";
@@ -18,6 +12,8 @@ export function sequelizeImport(sequelize, DataTypes) {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4
         },
+        // reference to original, unmodified node from swc database
+        tracingNodeId: DataTypes.UUID,
         sampleNumber: DataTypes.INTEGER,
         x: DataTypes.DOUBLE,
         y: DataTypes.DOUBLE,
@@ -27,7 +23,6 @@ export function sequelizeImport(sequelize, DataTypes) {
     }, {
         classMethods: {
             associate: models => {
-                TracingNode.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
                 TracingNode.belongsTo(models.Tracing, {foreignKey: "tracingId"});
             }
         },

@@ -1,26 +1,63 @@
-let typeDefinitions = `    
-type Tracing {
-  id: String!
-  filename: String
-  annotator: String
-  fileComments: String
-  offsetX: Float
-  offsetY: Float
-  offsetZ: Float
+let typeDefinitions = `
+type RegistrationTransform {
+    id: String!
+    location: String
+    name: String
+    notes: String
+}
+
+type JaneliaNode {
+    id: String!
+    sampleNumber: Int
+    x: Float
+    y: Float
+    z: Float
+    radius: Float
+    parentNumber: Int
+}
+
+type JaneliaTracing {
+    id: String!
+    filename: String
+    annotator: String
+    fileComments: String
+    offsetX: Float
+    offsetY: Float
+    offsetZ: Float
+}
+
+type TransformedTracing {
+    id: String!
+    janeliaTracing: JaneliaTracing  
+    transform: RegistrationTransform
+    nodes: [TransformedNode]
+}
+
+type TransformedNode {
+    id: String!
+    sampleNumber: Int
+    x: Float
+    y: Float
+    z: Float
+    radius: Float
+    parentNumber: Int
+    node: JaneliaNode
 }
 
 type Query {
-     tracings: [Tracing!]!
+     janeliaTracings: [JaneliaTracing!]!
+     janeliaTracing(id: String): JaneliaTracing!
+     tracings: [TransformedTracing!]!
+     tracing(id: String): TransformedTracing!
 }
 
 type Mutation {
-   deleteProject(id: String!): Boolean
+   transform(id: String!): TransformedTracing
 }
 
 schema {
   query: Query
   mutation: Mutation
-}
-`;
+}`;
 
 export default typeDefinitions;
