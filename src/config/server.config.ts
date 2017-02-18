@@ -8,22 +8,22 @@ interface IServerConfig {
 
 const configurations: IConfiguration<IServerConfig> = {
     development: {
-        port: 5000,
+        port: 9661,
         graphQlEndpoint: "/graphql",
         graphiQlEndpoint: "/graphiql"
     },
     test: {
-        port: 5000,
+        port: 9661,
         graphQlEndpoint: "/graphql",
         graphiQlEndpoint: "/graphiql"
     },
     stage: {
-        port: 5050,
+        port: 9661,
         graphQlEndpoint: "/graphql",
         graphiQlEndpoint: "/graphiql"
     },
     production: {
-        port: 5000,
+        port: 9661,
         graphQlEndpoint: "/graphql",
         graphiQlEndpoint: "/graphiql"
     }
