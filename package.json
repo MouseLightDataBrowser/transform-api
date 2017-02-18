@@ -1,5 +1,5 @@
 {
-  "name": "ndb-transform",
+  "name": "ndb-transform-api",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -34,7 +34,7 @@
     "typescript": "^2.1.6"
   },
   "main": "index.js",
-  "repository": "https://github.com/TeravoxelTwoPhotonTomography/ndb-transform.git",
+  "repository": "https://github.com/TeravoxelTwoPhotonTomography/ndb-transform-api.git",
   "author": "Patrick Edson <pedson@leapscientific.com>",
   "license": "Janelia"
 }

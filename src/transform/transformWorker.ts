@@ -11,6 +11,8 @@ import {IJaneliaTracing} from "../models/swc/tracing";
 const storageManager = PersistentStorageManager.Instance();
 
 export async function applyTransform(tracing: ITracing, janeliaTracing: IJaneliaTracing, registrationTransform) {
+    debug("initiating transform");
+
     let janeliaNodes = await janeliaTracing.getNodes();
 
     const file = new hdf5.File(registrationTransform.location, Access.ACC_RDONLY);
@@ -29,6 +31,8 @@ export async function applyTransform(tracing: ITracing, janeliaTracing: IJanelia
         stride: stride,
         count: count
     });
+
+    debug("initiating transform");
 
     let nodes = janeliaNodes.map((janeliaNode, index) => {
         // TODO Create real transformed nodes
