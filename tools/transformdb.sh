@@ -2,6 +2,7 @@
 
 IMAGE="postgres:9"
 
+# Modify from default for multiple exposed database containers outside of Docker Compose environment
 PG_PORT=5434
 
 # Can match volume used in Docker Compose for deployment to share data.

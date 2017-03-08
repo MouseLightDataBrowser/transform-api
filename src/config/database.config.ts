@@ -13,7 +13,7 @@ export = {
       "username": "postgres",
       "password": "pgsecret",
       "database": "samples_test",
-      "host": "localhost",
+      "host": "sample-db",
       "port": "5432",
       "dialect": "postgres",
       "logging": null
@@ -22,7 +22,7 @@ export = {
       "username": "postgres",
       "password": "pgsecret",
       "database": "samples_production",
-      "host": "sampledatabase",
+      "host": "sample-db",
       "port": "5432",
       "dialect": "postgres",
       "logging": null
@@ -42,7 +42,7 @@ export = {
       "username": "postgres",
       "password": "pgsecret",
       "database": "swc_test",
-      "host": "192.168.6.134",
+      "host": "swc-db",
       "port": "5432",
       "dialect": "postgres",
       "logging": null
@@ -51,7 +51,7 @@ export = {
       "username": "postgres",
       "password": "pgsecret",
       "database": "swc_production",
-      "host": "swcdatabase",
+      "host": "swc-db",
       "port": "5432",
       "dialect": "postgres",
       "logging": null
@@ -71,7 +71,7 @@ export = {
       "username": "postgres",
       "password": "pgsecret",
       "database": "transform_test",
-      "host": "192.168.6.134",
+      "host": "transform-db",
       "port": "5432",
       "dialect": "postgres",
       "logging": null
@@ -80,7 +80,7 @@ export = {
       "username": "postgres",
       "password": "pgsecret",
       "database": "transform_production",
-      "host": "transformdatabase",
+      "host": "transform-db",
       "port": "5432",
       "dialect": "postgres",
       "logging": null
