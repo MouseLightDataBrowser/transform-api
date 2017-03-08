@@ -6,14 +6,17 @@ RUN cd /tmp/hdf5-1.10.0-patch1; ./configure --prefix=/usr/local --enable-cxx
 RUN cd /tmp/hdf5-1.10.0-patch1; make
 RUN cd /tmp/hdf5-1.10.0-patch1; make install
 
-# Bundle app source
-COPY . /app
+WORKDIR /app
 
-# Remove docker development dependencies
-RUN rm -rf /app/node_modules
+# Bundle app source
+COPY . .
 
 # Install production app dependencies
-RUN cd /app; npm install -g yarn
-RUN cd /app; yarn install
+RUN npm install -g yarn typescript@2.1.6
+RUN yarn install
+
+RUN tsc
+
+CMD ["./start.sh"]
 
 EXPOSE  9661

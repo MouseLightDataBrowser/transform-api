@@ -1,0 +1,8 @@
+.dockerignore
+.gitignore
+datastore
+Dockerfile
+node_modules
+README.md
+tools
+yarn.lock

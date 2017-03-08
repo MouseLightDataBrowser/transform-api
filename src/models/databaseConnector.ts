@@ -104,6 +104,8 @@ function createConnection<T>(name: string, models: T) {
         isConnected: false
     };
 
+    debug(`initiating connection to ${databaseConfig.database}`);
+
     db.connection = new Sequelize(databaseConfig.database, databaseConfig.username, databaseConfig.password, databaseConfig);
 
     return loadModels(db, __dirname + "/" + name);
