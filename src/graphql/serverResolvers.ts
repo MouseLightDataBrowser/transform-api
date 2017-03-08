@@ -5,6 +5,7 @@ const debug = require("debug")("ndb:transform:resolvers");
 import {IJaneliaTracing} from "../models/swc/tracing";
 import {ITracing} from "../models/transform/tracing";
 import {ITracingNode} from "../models/transform/tracingNode";
+import {IRegistrationTransform} from "../models/sample/registrationTransform";
 
 interface IIdOnlyArguments {
     id: string;
@@ -16,6 +17,7 @@ const resolvers = {
             return context.getJaneliaTracings();
         },
         janeliaTracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
+            debug(args.id);
             return context.getJaneliaTracing(args.id);
         },
         tracings(_, __, context: IGraphQLServerContext): Promise<ITracing[]> {
@@ -31,8 +33,11 @@ const resolvers = {
         }
     },
     TransformedTracing: {
-        janeliaTracing(tracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
+        janeliaTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
             return context.getJaneliaTracing(tracing.tracingId);
+        },
+        registrationTransform(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IRegistrationTransform> {
+            return context.getRegistrationTransform(tracing.registrationTransformId);
         },
         nodes(tracing, _, context: IGraphQLServerContext): ITracingNode[] {
             return [];

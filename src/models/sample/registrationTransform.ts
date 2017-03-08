@@ -1,5 +1,12 @@
 export const TableName = "RegistrationTransform";
 
+export interface IRegistrationTransform {
+    id: string;
+    location: string;
+    name: string;
+    notes: string;
+}
+
 export function sequelizeImport(sequelize, DataTypes) {
     const RegistrationTransform = sequelize.define(TableName, {
         id: {

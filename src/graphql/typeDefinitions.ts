@@ -29,7 +29,7 @@ type JaneliaTracing {
 type TransformedTracing {
     id: String!
     janeliaTracing: JaneliaTracing  
-    transform: RegistrationTransform
+    registrationTransform: RegistrationTransform
     nodes: [TransformedNode]
 }
 

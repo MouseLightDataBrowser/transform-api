@@ -91,7 +91,7 @@ export async function applyTransform(tracing: ITracing, janeliaTracing: IJanelia
 
     hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
 
-    await storageManager.Nodes.destroy({where: {tracingId: tracing.id}});
+    await storageManager.Nodes.destroy({where: {tracingId: tracing.id}, force: true});
 
     await storageManager.Nodes.bulkCreate(nodes);
 

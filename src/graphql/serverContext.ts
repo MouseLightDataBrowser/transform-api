@@ -5,6 +5,7 @@ import {PersistentStorageManager} from "../models/databaseConnector";
 import {IJaneliaTracing} from "../models/swc/tracing";
 import {ITracing} from "../models/transform/tracing";
 import {applyTransform} from "../transform/transformWorker";
+import {IRegistrationTransform} from "../models/sample/registrationTransform";
 
 export interface IGraphQLServerContext {
     getJaneliaTracings(): Promise<IJaneliaTracing[]>;
@@ -12,6 +13,8 @@ export interface IGraphQLServerContext {
 
     getTracings(): Promise<ITracing[]>;
     getTracing(id: string): Promise<ITracing>;
+
+    getRegistrationTransform(id: string): Promise<IRegistrationTransform>;
 
     transform(janeliaTracingId: string): Promise<ITracing>;
 }
@@ -25,6 +28,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getJaneliaTracing(id: string): Promise<IJaneliaTracing> {
         const result = await this._storageManager.JaneliaTracings.findAll({where: {id: id}});
+
+        return (result && result.length > 0) ? result[0] : null;
+    }
+
+    public async getRegistrationTransform(id: string): Promise<IRegistrationTransform> {
+        const result = await this._storageManager.RegistrationTransforms.findAll({where: {id: id}});
 
         return (result && result.length > 0) ? result[0] : null;
     }

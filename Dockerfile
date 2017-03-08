@@ -9,11 +9,11 @@ RUN cd /tmp/hdf5-1.10.0-patch1; make install
 # Bundle app source
 COPY . /app
 
-# Remove dockerdevelopment dependencies
+# Remove docker development dependencies
 RUN rm -rf /app/node_modules
 
 # Install production app dependencies
 RUN cd /app; npm install -g yarn
 RUN cd /app; yarn install
 
-EXPOSE  9654
+EXPOSE  9661

@@ -39,8 +39,5 @@ export function sequelizeImport(sequelize, DataTypes) {
         return (result && result.length > 0) ? result[0] : null;
     };
 
-    Tracing.Instance.prototype.applyTransform = () => {
-    };
-
     return Tracing;
 }

@@ -1,15 +1,10 @@
 {
   "name": "ndb-transform-api",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "start": "node src/transformApp.js",
     "dev": "DEBUG=ndb:transform* node $NODE_DEBUG_OPTION src/transformApp.js"
-  },
-  "babel": {
-    "presets": [
-      "latest"
-    ]
   },
   "dependencies": {
     "body-parser": "^1.16.1",
@@ -27,14 +22,10 @@
     "@types/express": "^4.0.35",
     "@types/sequelize": "^4.0.40",
     "babel-preset-latest": "^6.22.0",
-    "del": "^2.2.2",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^6.1.2",
-    "gulp-typescript": "^3.1.5",
     "typescript": "^2.1.6"
   },
   "main": "index.js",
-  "repository": "https://github.com/TeravoxelTwoPhotonTomography/ndb-transform-api.git",
+  "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
   "author": "Patrick Edson <pedson@leapscientific.com>",
   "license": "Janelia"
 }
