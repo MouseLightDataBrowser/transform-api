@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node src/transformApp.js",
     "dev": "DEBUG=ndb:transform* node $NODE_DEBUG_OPTION src/transformApp.js",
+    "testdocker": "docker build .",
     "dockerbuild": "docker build --tag mouselightdatabrowser/transform-api .",
     "dockerpush": "docker push mouselightdatabrowser/transform-api"
   },
