@@ -1,4 +1,4 @@
-FROM node:7
+FROM node:7.7
 
 RUN cd /tmp; wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar.gz
 RUN cd /tmp; tar xvzf hdf5-1.10.0-patch1.tar.gz
@@ -12,7 +12,7 @@ WORKDIR /app
 COPY . .
 
 # Install production app dependencies
-RUN npm install -g yarn typescript@2.1.6
+RUN npm install -g typescript@2.1.6
 RUN yarn install
 
 RUN tsc

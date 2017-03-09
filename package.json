@@ -6,7 +6,7 @@
     "start": "node src/transformApp.js",
     "dev": "DEBUG=ndb:transform* node $NODE_DEBUG_OPTION src/transformApp.js",
     "dockerbuild": "docker build --tag mouselightdatabrowser/transform-api .",
-    "dockerpush": "docker push  mouselightdatabrowser/transform-api"
+    "dockerpush": "docker push mouselightdatabrowser/transform-api"
   },
   "dependencies": {
     "body-parser": "^1.16.1",
