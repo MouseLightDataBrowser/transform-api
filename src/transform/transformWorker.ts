@@ -11,91 +11,96 @@ import {IJaneliaTracing} from "../models/swc/tracing";
 const storageManager = PersistentStorageManager.Instance();
 
 export async function applyTransform(tracing: ITracing, janeliaTracing: IJaneliaTracing, registrationTransform) {
-    debug("initiating transform");
+    debug(`initiating transform for janelia tracing ${janeliaTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
 
-    let janeliaNodes = await janeliaTracing.getNodes();
+    try {
+        let janeliaNodes = await janeliaTracing.getNodes();
 
-    const file = new hdf5.File(registrationTransform.location, Access.ACC_RDONLY);
+        const file = new hdf5.File(registrationTransform.location, Access.ACC_RDONLY);
 
-    const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
+        const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
 
-    // debug("transform matrix");
-    // debug(transformMatrix);
+        // debug("transform matrix");
+        // debug(transformMatrix);
 
-    const stride = [1, 1, 1, 1];
+        const stride = [1, 1, 1, 1];
 
-    const count = [3, 1, 1, 1];
+        const count = [3, 1, 1, 1];
 
-    const dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
-        start: stride,
-        stride: stride,
-        count: count
-    });
+        const dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
+            start: stride,
+            stride: stride,
+            count: count
+        });
 
-    debug("initiating transform");
+        debug(`transforming ${janeliaNodes.length} nodes`);
 
-    let nodes = janeliaNodes.map((janeliaNode, index) => {
-        // TODO Create real transformed nodes
+        let nodes = janeliaNodes.map((janeliaNode, index) => {
+            // TODO Create real transformed nodes
 
-        let transformedLocation = [NaN, NaN, NaN];
+            let transformedLocation = [NaN, NaN, NaN];
 
-        try {
-            const sourceLoc = [janeliaNode.x + janeliaTracing.offsetX, janeliaNode.y + janeliaTracing.offsetY, janeliaNode.z + janeliaTracing.offsetZ, 1];
+            try {
+                const sourceLoc = [janeliaNode.x + janeliaTracing.offsetX, janeliaNode.y + janeliaTracing.offsetY, janeliaNode.z + janeliaTracing.offsetZ, 1];
 
-            // debug("source location");
-            // debug(sourceLoc);
+                // debug("source location");
+                // debug(sourceLoc);
 
-            const transformedInput = matrixMultiply(sourceLoc, transformMatrix);
+                const transformedInput = matrixMultiply(sourceLoc, transformMatrix);
 
-            // debug("transformed input");
-            // debug(transformedInput);
+                // debug("transformed input");
+                // debug(transformedInput);
 
-            const start = [0, ...transformedInput.reverse()];
-            // debug("start");
-            // debug(start);
+                const start = [0, ...transformedInput.reverse()];
+                // debug("start");
+                // debug(start);
 
-            const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
-                start: start,
-                stride: stride,
-                count: count
-            });
+                const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
+                    start: start,
+                    stride: stride,
+                    count: count
+                });
 
-            // Squeeze
-            const transformedOutput = dataset.data[0][0][0];
+                // Squeeze
+                const transformedOutput = dataset.data[0][0][0];
 
-            // debug("transformed output");
-            // debug(transformedOutput);
+                // debug("transformed output");
+                // debug(transformedOutput);
 
-            transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
+                transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
 
-            // debug("transformed location");
-            // debug(transformedLocation);
-        } catch (err) {
-            debug(index);
-            debug(err);
-        }
+                // debug("transformed location");
+                // debug(transformedLocation);
+            } catch (err) {
+                debug(index);
+                debug(err);
+            }
 
-        return {
-            tracingId: tracing.id,
-            tracingNodeId: janeliaNode.id,
-            sampleNumber: janeliaNode.sampleNumber,
-            x: transformedLocation[0],
-            y: transformedLocation[1],
-            z: transformedLocation[2],
-            radius: janeliaNode.radius,
-            parentNumber: janeliaNode.parentNumber
-        };
-    });
+            return {
+                tracingId: tracing.id,
+                tracingNodeId: janeliaNode.id,
+                sampleNumber: janeliaNode.sampleNumber,
+                x: transformedLocation[0],
+                y: transformedLocation[1],
+                z: transformedLocation[2],
+                radius: janeliaNode.radius,
+                parentNumber: janeliaNode.parentNumber
+            };
+        });
 
-    debug("transform complete");
+        debug("transform complete");
 
-    hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
+        hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
 
-    await storageManager.Nodes.destroy({where: {tracingId: tracing.id}, force: true});
+        await storageManager.Nodes.destroy({where: {tracingId: tracing.id}, force: true});
 
-    await storageManager.Nodes.bulkCreate(nodes);
+        await storageManager.Nodes.bulkCreate(nodes);
 
-    debug("inserted");
+        debug("inserted");
+    } catch (err) {
+        debug("transform exception");
+        console.log(err);
+    }
 }
 /*
  * To date, the only matrix operation we need, so not pulling in something like math.js.

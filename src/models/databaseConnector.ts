@@ -2,9 +2,11 @@ const Sequelize = require("sequelize");
 
 const debug = require("debug")("ndb:transform:database-connector");
 
-import {loadModels} from "./modelLoader";
+const config = require("../config/database.config");
 
-const config = require(__dirname + "/../config/database.config");
+import {ServerConfig} from "../config/server.config"
+
+import {loadModels} from "./modelLoader";
 
 export interface ISampleDatabaseModels {
     BrainArea?: any
@@ -94,9 +96,16 @@ async function sync(database, name, force = false) {
 }
 
 function createConnection<T>(name: string, models: T) {
-    const env = process.env.NODE_ENV || "development";
+    // Pull the host information from the regular node env.  Local vs. docker container, etc.
+    const hostInfo = config["hosts"][name][ServerConfig.envName];
 
-    const databaseConfig = config[name][env];
+    // Option to override database (e.g., production vs. development) so that one service can run locally with dev hosts
+    // but connect to production tables used by production services.
+    const databaseInfo = config["databases"][name][ServerConfig.dbEnvName];
+
+    const databaseConfig = Object.assign(databaseInfo, hostInfo);
+
+    console.log(databaseConfig);
 
     let db: ISequelizeDatabase<T> = {
         connection: null,
