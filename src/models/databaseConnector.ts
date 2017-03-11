@@ -74,9 +74,9 @@ export class PersistentStorageManager {
     }
 
     public async initialize() {
-        await sync(this.sampleDatabase, "sample");
-        await sync(this.swcDatabase, "swc");
-        await sync(this.transformDatabase, "transform");
+        await authenticate(this.sampleDatabase, "sample");
+        await authenticate(this.swcDatabase, "swc");
+        await authenticate(this.transformDatabase, "transform");
     }
 
     private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels> = createConnection("sample", {});
@@ -84,23 +84,17 @@ export class PersistentStorageManager {
     private transformDatabase: ISequelizeDatabase<ITransformDatabaseModels> = createConnection("transform", {});
 }
 
-async function sync(database, name, force = false) {
+async function authenticate(database, name) {
     try {
-        await database.connection.sync({force: force});
+        await database.connection.authenticate();
 
         database.isConnected = true;
 
-        debug(`successful database sync: ${name}`);
-
-        await Promise.all(Object.keys(database.models).map(key => {
-            return database.models[key].populateDefault ?  database.models[key].populateDefault() : Promise.resolve();
-        }));
-
-        debug(`populated models with defaults: ${name}`);
+        debug(`successful database connection: ${name}`);
     } catch (err) {
-        debug(`failed database sync: ${name}`);
+        debug(`failed database connection: ${name}`);
         debug(err);
-        setTimeout(() => sync(database, name), 5000);
+        setTimeout(() => authenticate(database, name), 5000);
     }
 }
 
