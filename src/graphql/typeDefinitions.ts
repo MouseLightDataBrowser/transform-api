@@ -8,19 +8,7 @@ type RegistrationTransform {
     updatedAt: Float
 }
 
-type JaneliaNode {
-    id: String!
-    sampleNumber: Int
-    x: Float
-    y: Float
-    z: Float
-    radius: Float
-    parentNumber: Int
-    createdAt: Float
-    updatedAt: Float
-}
-
-type JaneliaTracing {
+type SwcTracing {
     id: String!
     filename: String
     annotator: String
@@ -28,23 +16,12 @@ type JaneliaTracing {
     offsetX: Float
     offsetY: Float
     offsetZ: Float
-    firstNode: TransformedNode
+    firstNode: SwcNode
     createdAt: Float
     updatedAt: Float
 }
 
-type TransformedTracing {
-    id: String!
-    janeliaTracing: JaneliaTracing  
-    registrationTransform: RegistrationTransform
-    firstNode: TransformedNode
-    nodeCount: Int
-    nodes: [TransformedNode]
-    createdAt: Float
-    updatedAt: Float
-}
-
-type TransformedNode {
+type SwcNode {
     id: String!
     sampleNumber: Int
     x: Float
@@ -52,20 +29,43 @@ type TransformedNode {
     z: Float
     radius: Float
     parentNumber: Int
-    node: JaneliaNode
+    createdAt: Float
+    updatedAt: Float
+}
+
+type Tracing {
+    id: String!
+    swcTracing: SwcTracing  
+    registrationTransform: RegistrationTransform
+    firstNode: Node
+    nodeCount: Int
+    nodes: [Node]
+    createdAt: Float
+    updatedAt: Float
+}
+
+type Node {
+    id: String!
+    sampleNumber: Int
+    x: Float
+    y: Float
+    z: Float
+    radius: Float
+    parentNumber: Int
+    node: SwcNode
     createdAt: Float
     updatedAt: Float
 }
 
 type Query {
-     janeliaTracings: [JaneliaTracing!]!
-     janeliaTracing(id: String): JaneliaTracing!
-     tracings: [TransformedTracing!]!
-     tracing(id: String): TransformedTracing!
+     swcTracings: [SwcTracing!]!
+     swcTracing(id: String): SwcTracing!
+     tracings: [Tracing!]!
+     tracing(id: String): Tracing!
 }
 
 type Mutation {
-   transform(id: String!): TransformedTracing
+   transform(id: String!): Tracing
 }
 
 schema {

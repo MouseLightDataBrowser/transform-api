@@ -22,7 +22,7 @@ export function sequelizeImport(sequelize, DataTypes) {
             defaultValue: DataTypes.UUIDV4
         },
         // reference to original, unmodified tracing (from swc, etc) from swc database
-        tracingId: DataTypes.UUID,
+        swcTracingId: DataTypes.UUID,
         // reference to registration transform from sample database
         registrationTransformId: DataTypes.UUID
     }, {
@@ -36,7 +36,7 @@ export function sequelizeImport(sequelize, DataTypes) {
     });
 
     Tracing.findForJaneliaTracing = async(janeliaTracing: IJaneliaTracing, registration) => {
-        const result = await Tracing.findOrCreate({where: {tracingId: janeliaTracing.id, registrationTransformId: registration.id}});
+        const result = await Tracing.findOrCreate({where: {swcTracingId: janeliaTracing.id, registrationTransformId: registration.id}});
 
         return (result && result.length > 0) ? result[0] : null;
     };

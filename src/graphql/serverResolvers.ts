@@ -14,10 +14,10 @@ interface IIdOnlyArguments {
 
 const resolvers = {
     Query: {
-        janeliaTracings(_, __, context: IGraphQLServerContext): Promise<IJaneliaTracing[]> {
+        swcTracings(_, __, context: IGraphQLServerContext): Promise<IJaneliaTracing[]> {
             return context.getJaneliaTracings();
         },
-        janeliaTracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
+        swcTracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
             debug(args.id);
             return context.getJaneliaTracing(args.id);
         },
@@ -33,13 +33,13 @@ const resolvers = {
             return context.transform(args.id);
         }
     },
-    JaneliaTracing: {
+    SwcTracing: {
         firstNode(tracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracingNode> {
             return context.getFirstJaneliaNode(tracing);
         }
     },
-    TransformedTracing: {
-        janeliaTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
+    Tracing: {
+        swcTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
             return context.getJaneliaTracing(tracing.tracingId);
         },
         registrationTransform(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IRegistrationTransform> {

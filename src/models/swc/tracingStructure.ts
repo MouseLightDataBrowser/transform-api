@@ -1,7 +1,7 @@
-export const TableName = "StructureIdentifier";
+export const TableName = "TracingStructure";
 
 export function sequelizeImport(sequelize, DataTypes) {
-    const StructureIdentifier = sequelize.define(TableName, {
+    const TracingStructure = sequelize.define(TableName, {
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
@@ -13,12 +13,12 @@ export function sequelizeImport(sequelize, DataTypes) {
     }, {
         classMethods: {
             associate: models => {
-                StructureIdentifier.hasMany(models.TracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
+                TracingStructure.hasMany(models.Tracing, {foreignKey: "tracingStructureId", as: "Tracings"});
             }
         },
         timestamps: true,
         paranoid: true
     });
 
-    return StructureIdentifier;
+    return TracingStructure;
 }
