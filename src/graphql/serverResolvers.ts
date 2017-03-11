@@ -6,6 +6,7 @@ import {IJaneliaTracing} from "../models/swc/tracing";
 import {ITracing} from "../models/transform/tracing";
 import {ITracingNode} from "../models/transform/tracingNode";
 import {IRegistrationTransform} from "../models/sample/registrationTransform";
+import {IJaneliaTracingNode} from "../models/swc/tracingNode";
 
 interface IIdOnlyArguments {
     id: string;
@@ -32,6 +33,11 @@ const resolvers = {
             return context.transform(args.id);
         }
     },
+    JaneliaTracing: {
+        firstNode(tracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracingNode> {
+            return context.getFirstJaneliaNode(tracing);
+        }
+    },
     TransformedTracing: {
         janeliaTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
             return context.getJaneliaTracing(tracing.tracingId);
@@ -41,6 +47,12 @@ const resolvers = {
         },
         nodes(tracing, _, context: IGraphQLServerContext): ITracingNode[] {
             return [];
+        },
+        nodeCount(tracing, _, context: IGraphQLServerContext): Promise<number> {
+            return context.getNodeCount(tracing);
+        },
+        firstNode(tracing, _, context: IGraphQLServerContext): Promise<ITracingNode> {
+            return context.getFirstTracingNode(tracing);
         }
     }
 };

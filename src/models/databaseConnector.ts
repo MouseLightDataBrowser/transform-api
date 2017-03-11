@@ -37,7 +37,6 @@ export interface ISequelizeDatabase<T> {
 }
 
 export class PersistentStorageManager {
-
     public static Instance(): PersistentStorageManager {
         return _manager;
     }
@@ -60,6 +59,10 @@ export class PersistentStorageManager {
 
     public get JaneliaTracings() {
         return this.swcDatabase.models.Tracing;
+    }
+
+    public get JaneliaNodes() {
+        return this.swcDatabase.models.TracingNode;
     }
 
     public get Tracings() {
@@ -87,9 +90,15 @@ async function sync(database, name, force = false) {
 
         database.isConnected = true;
 
-        debug(`successful ${name} database sync`);
+        debug(`successful database sync: ${name}`);
+
+        await Promise.all(Object.keys(database.models).map(key => {
+            return database.models[key].populateDefault ?  database.models[key].populateDefault() : Promise.resolve();
+        }));
+
+        debug(`populated models with defaults: ${name}`);
     } catch (err) {
-        debug(`failed ${name} database sync`);
+        debug(`failed database sync: ${name}`);
         debug(err);
         setTimeout(() => sync(database, name), 5000);
     }
@@ -105,15 +114,13 @@ function createConnection<T>(name: string, models: T) {
 
     const databaseConfig = Object.assign(databaseInfo, hostInfo);
 
-    console.log(databaseConfig);
-
     let db: ISequelizeDatabase<T> = {
         connection: null,
         models: models,
         isConnected: false
     };
 
-    debug(`initiating connection to ${databaseConfig.database}`);
+    debug(`initiating connection: ${databaseConfig.host}:${databaseConfig.port}#${databaseConfig.database}`);
 
     db.connection = new Sequelize(databaseConfig.database, databaseConfig.username, databaseConfig.password, databaseConfig);
 

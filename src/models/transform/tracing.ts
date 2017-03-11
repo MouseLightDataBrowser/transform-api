@@ -5,6 +5,8 @@ export interface ITracing {
     id: string;
     tracingId: string;
     registrationTransformId: string;
+    createdAt: Date;
+    updatedAt: Date;
 
     getNodes(): ITracingNode[];
     applyTransform();

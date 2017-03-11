@@ -20,9 +20,6 @@ export async function applyTransform(tracing: ITracing, janeliaTracing: IJanelia
 
         const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
 
-        // debug("transform matrix");
-        // debug(transformMatrix);
-
         const stride = [1, 1, 1, 1];
 
         const count = [3, 1, 1, 1];

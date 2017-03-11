@@ -19,4 +19,4 @@ app.use(ServerConfig.graphQlEndpoint, graphQLMiddleware());
 
 app.use(ServerConfig.graphiQlEndpoint, graphiQLMiddleware(ServerConfig));
 
-app.listen(PORT, () => debug(`transform api server is now running with env on http://localhost:${PORT}`));
+app.listen(PORT, () => debug(`transform api server is now running with env ${ServerConfig.envName} on http://localhost:${PORT}`));
