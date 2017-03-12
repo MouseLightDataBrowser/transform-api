@@ -18,29 +18,5 @@ export function sequelizeImport(sequelize, DataTypes) {
         paranoid: true
     });
 
-    function populateDefault(model) {
-        return new Promise((resolve, reject) => {
-            model.count().then((count) => {
-                if (count < 2) {
-                    if (count < 1) {
-                        model.create({name: "eGFP"});
-                    }
-                    if (count < 2) {
-                        model.create({name: "tdTomato"});
-                    }
-                    resolve(true);
-                } else {
-                    resolve(false);
-                }
-            }).catch((err) => {
-                reject(err);
-            });
-        });
-    }
-
-    Fluorophore.populateDefault = () => {
-        return populateDefault(Fluorophore);
-    };
-
     return Fluorophore;
 }
