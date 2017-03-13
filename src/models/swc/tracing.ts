@@ -54,7 +54,7 @@ export function sequelizeImport(sequelize, DataTypes) {
         classMethods: {
             associate: models => {
                 Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "Nodes"});
-                Tracing.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
+                Tracing.belongsTo(models.TracingStructure, {foreignKey: "tracingStructureId"});
             }
         },
         timestamps: true,

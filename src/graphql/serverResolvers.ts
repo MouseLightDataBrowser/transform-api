@@ -40,7 +40,7 @@ const resolvers = {
     },
     Tracing: {
         swcTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IJaneliaTracing> {
-            return context.getJaneliaTracing(tracing.tracingId);
+            return context.getJaneliaTracing(tracing.swcTracingId);
         },
         registrationTransform(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IRegistrationTransform> {
             return context.getRegistrationTransform(tracing.registrationTransformId);

@@ -12,6 +12,7 @@ const storageManager = PersistentStorageManager.Instance();
 
 export async function applyTransform(tracing: ITracing, janeliaTracing: IJaneliaTracing, registrationTransform) {
     debug(`initiating transform for janelia tracing ${janeliaTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
+    debug(`\ttransform location ${registrationTransform.location}`);
 
     try {
         let janeliaNodes = await janeliaTracing.getNodes();
@@ -75,7 +76,7 @@ export async function applyTransform(tracing: ITracing, janeliaTracing: IJanelia
 
             return {
                 tracingId: tracing.id,
-                tracingNodeId: janeliaNode.id,
+                swcNodeId: janeliaNode.id,
                 sampleNumber: janeliaNode.sampleNumber,
                 x: transformedLocation[0],
                 y: transformedLocation[1],

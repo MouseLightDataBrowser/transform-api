@@ -7,9 +7,7 @@ export function sequelizeImport(sequelize, DataTypes) {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4
         },
-        name: DataTypes.TEXT,
-        value: DataTypes.INTEGER,
-        mutable: {type: DataTypes.BOOLEAN, defaultValue: true}
+        name: DataTypes.TEXT
     }, {
         classMethods: {
             associate: models => {

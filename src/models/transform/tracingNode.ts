@@ -13,13 +13,15 @@ export function sequelizeImport(sequelize, DataTypes) {
             defaultValue: DataTypes.UUIDV4
         },
         // reference to original, unmodified node from swc database
-        tracingNodeId: DataTypes.UUID,
+        swcNodeId: DataTypes.UUID,
+        // Unchanged values
         sampleNumber: DataTypes.INTEGER,
+        parentNumber: DataTypes.INTEGER,
+        radius: DataTypes.DOUBLE,
+        // Modified values
         x: DataTypes.DOUBLE,
         y: DataTypes.DOUBLE,
         z: DataTypes.DOUBLE,
-        radius: DataTypes.DOUBLE,
-        parentNumber: DataTypes.INTEGER
     }, {
         classMethods: {
             associate: models => {

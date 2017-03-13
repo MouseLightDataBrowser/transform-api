@@ -3,7 +3,7 @@ import {ITracingNode} from "./tracingNode";
 
 export interface ITracing {
     id: string;
-    tracingId: string;
+    swcTracingId: string;
     registrationTransformId: string;
     createdAt: Date;
     updatedAt: Date;
