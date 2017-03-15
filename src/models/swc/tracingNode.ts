@@ -1,4 +1,4 @@
-export interface IJaneliaTracingNode {
+export interface ISwcNode {
     id: string;
     tracingId: string;
     sampleNumber: number;
@@ -7,6 +7,7 @@ export interface IJaneliaTracingNode {
     z: number;
     radius: number;
     parentNumber: number;
+    structureIdentifierId: string;
 }
 
 export const TableName = "TracingNode";
@@ -32,7 +33,7 @@ export function sequelizeImport(sequelize, DataTypes) {
             }
         },
         timestamps: true,
-        paranoid: true
+        paranoid: false
     });
 
     return TracingNode;

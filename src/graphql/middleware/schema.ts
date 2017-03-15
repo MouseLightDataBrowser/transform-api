@@ -11,13 +11,15 @@ let executableSchema = makeExecutableSchema({
     }
 });
 
-addMockFunctionsToSchema({
-    schema: executableSchema,
-    mocks: {
-        String: () => "Not implemented",
-        DateTime: () => Date.now()
-    },
-    preserveResolvers: true
-});
+if (process.env.NOD_ENV === "production") {
+    addMockFunctionsToSchema({
+        schema: executableSchema,
+        mocks: {
+            String: () => "Not implemented",
+            DateTime: () => Date.now()
+        },
+        preserveResolvers: true
+    });
+}
 
 export {executableSchema as schema};

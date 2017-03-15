@@ -1,5 +1,11 @@
 export const TableName = "TracingStructure";
 
+export interface ITracingStructure {
+    id: string;
+    name: string;
+    value: number;
+}
+
 export function sequelizeImport(sequelize, DataTypes) {
     const TracingStructure = sequelize.define(TableName, {
         id: {
@@ -7,7 +13,8 @@ export function sequelizeImport(sequelize, DataTypes) {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4
         },
-        name: DataTypes.TEXT
+        name: DataTypes.TEXT,
+        value: DataTypes.INTEGER
     }, {
         classMethods: {
             associate: models => {

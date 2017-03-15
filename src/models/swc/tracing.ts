@@ -1,6 +1,6 @@
-import {IJaneliaTracingNode} from "./tracingNode";
+import {ISwcNode} from "./tracingNode";
 
-export interface IJaneliaTracing {
+export interface ISwcTracing {
     id: string;
     neuronId: string;
     filename: string;
@@ -9,8 +9,9 @@ export interface IJaneliaTracing {
     offsetX: number;
     offsetY: number;
     offsetZ: number;
+    tracingStructureId: string;
 
-    getNodes(): IJaneliaTracingNode[];
+    getNodes(): ISwcNode[];
 }
 
 export const TableName = "Tracing";
@@ -58,7 +59,7 @@ export function sequelizeImport(sequelize, DataTypes) {
             }
         },
         timestamps: true,
-        paranoid: true
+        paranoid: false
     });
 
     return Tracing;

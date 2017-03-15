@@ -69,6 +69,10 @@ array-flatten@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/array-flatten/-/array-flatten-1.1.1.tgz#9a5f699051b1e7073328f2a008968b64ea2955d2"
 
+bindings@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/bindings/-/bindings-1.2.1.tgz#14ad6113812d2d37d72e67b4cacb4bb726505f11"
+
 bluebird@^3.3.4, bluebird@^3.4.6:
   version "3.5.0"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.0.tgz#791420d7f551eea2897453a8a77653f96606d67c"
@@ -364,6 +368,10 @@ ms@0.7.2:
   version "0.7.2"
   resolved "https://registry.yarnpkg.com/ms/-/ms-0.7.2.tgz#ae25cf2512b3885a1d95d7f037868d8431124765"
 
+nan@^2.4.0:
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.5.1.tgz#d5b01691253326a97a2bbee9e61c55d8d60351e2"
+
 negotiator@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.1.tgz#2b327184e8992101177b28563fb5e7102acd0ca9"
@@ -614,6 +622,13 @@ validator@^5.2.0:
 vary@~1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.0.tgz#e1e5affbbd16ae768dd2674394b9ad3022653140"
+
+webworker-threads@^0.7.11:
+  version "0.7.11"
+  resolved "https://registry.yarnpkg.com/webworker-threads/-/webworker-threads-0.7.11.tgz#9d54dfaa8d5ea3308833084680636b584a8aacaa"
+  dependencies:
+    bindings "^1.2.1"
+    nan "^2.4.0"
 
 which@^1.2.9:
   version "1.2.12"

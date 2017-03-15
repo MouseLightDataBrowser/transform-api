@@ -1,4 +1,38 @@
 let typeDefinitions = `
+type BrainArea {
+    id: String!
+    name: String
+    structureId: Int
+    depth: Int
+    parentStructureId: Int
+    structureIdPath: String
+    safeName: String
+    acronym: String
+    atlasId: Int
+    graphId: Int
+    graphOrder: Int
+    hemisphereId: Int
+    createdAt: Float
+    updatedAt: Float
+}
+
+type TracingStructure {
+    id: String!
+    name: String
+    value: Int
+    createdAt: Float
+    updatedAt: Float
+}
+
+type StructureIdentifier {
+    id: String!
+    name: String
+    value: Int
+    mutable: Boolean
+    createdAt: Float
+    updatedAt: Float
+}
+
 type RegistrationTransform {
     id: String!
     location: String
@@ -17,6 +51,7 @@ type SwcTracing {
     offsetY: Float
     offsetZ: Float
     firstNode: SwcNode
+    tracingStructure: TracingStructure
     createdAt: Float
     updatedAt: Float
 }
@@ -29,6 +64,7 @@ type SwcNode {
     z: Float
     radius: Float
     parentNumber: Int
+    structureIdentifier: StructureIdentifier
     createdAt: Float
     updatedAt: Float
 }
@@ -40,6 +76,8 @@ type Tracing {
     firstNode: Node
     nodeCount: Int
     nodes: [Node]
+    transformStatus: TransformStatus
+    transformedAt: Float
     createdAt: Float
     updatedAt: Float
 }
@@ -52,9 +90,25 @@ type Node {
     z: Float
     radius: Float
     parentNumber: Int
-    node: SwcNode
+    lengthToParent: Float
+    brainArea: BrainArea
+    swcNode: SwcNode
     createdAt: Float
     updatedAt: Float
+}
+
+type NodePage {
+    offset: Int
+    limit: Int
+    totalCount: Int
+    hasNextPage: Boolean
+    nodes: [Node]
+}
+
+type TransformStatus {
+    startedAt: Float
+    inputNodeCount: Int
+    outputNodeCount: Int
 }
 
 type Query {
@@ -62,10 +116,12 @@ type Query {
      swcTracing(id: String): SwcTracing!
      tracings: [Tracing!]!
      tracing(id: String): Tracing!
+     tracingNodePage(id: String, offset: Int, limit: Int): NodePage
 }
 
 type Mutation {
    transform(id: String!): Tracing
+   reapplyTransform(id: String!): Tracing
 }
 
 schema {

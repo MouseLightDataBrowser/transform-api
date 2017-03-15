@@ -23,6 +23,7 @@ export interface ISwcDatabaseModels {
     Tracing?: any;
     TracingNode?: any;
     StructureIdentifier?: any;
+    TracingStructure?: any;
 }
 
 export interface ITransformDatabaseModels {
@@ -41,6 +42,10 @@ export class PersistentStorageManager {
         return _manager;
     }
 
+    public get BrainAreas() {
+        return this.sampleDatabase.models.BrainArea;
+    }
+
     public get Samples() {
         return this.sampleDatabase.models.Sample;
     }
@@ -57,11 +62,19 @@ export class PersistentStorageManager {
         return this.sampleDatabase.models.Neuron;
     }
 
-    public get JaneliaTracings() {
+    public get TracingStructures() {
+        return this.swcDatabase.models.TracingStructure;
+    }
+
+    public get StructureIdentifiers() {
+        return this.swcDatabase.models.StructureIdentifier;
+    }
+
+    public get SwcTracings() {
         return this.swcDatabase.models.Tracing;
     }
 
-    public get JaneliaNodes() {
+    public get SwcNodes() {
         return this.swcDatabase.models.TracingNode;
     }
 

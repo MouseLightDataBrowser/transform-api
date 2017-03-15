@@ -1,6 +1,12 @@
 const path = require("path");
 const fs = require("fs");
 
+export interface IBrainArea {
+    id: string;
+    name: string;
+    structureId: number;
+}
+
 export const TableName = "BrainArea";
 
 export function sequelizeImport(sequelize, DataTypes) {

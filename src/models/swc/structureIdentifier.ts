@@ -1,3 +1,9 @@
+export interface IStructureIdentifier {
+    id: string;
+    name: string;
+    value: number;
+    mutable: boolean;
+}
 export const TableName = "StructureIdentifier";
 
 export function sequelizeImport(sequelize, DataTypes) {

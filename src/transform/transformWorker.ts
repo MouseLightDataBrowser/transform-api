@@ -1,112 +1,91 @@
-const hdf5 = require("hdf5").hdf5;
-
-const Access = require("hdf5/lib/globals").Access;
+import {performNodeMap} from "./nodeWorker";
+const path = require("path");
+const fs = require("fs");
+const fork = require("child_process").fork;
 
 const debug = require("debug")("ndb:transform:transform-worker");
 
-import {PersistentStorageManager} from "../models/databaseConnector";
+import {ServerConfig} from "../config/server.config";
 import {ITracing} from "../models/transform/tracing";
-import {IJaneliaTracing} from "../models/swc/tracing";
+import {ISwcTracing} from "../models/swc/tracing";
 
-const storageManager = PersistentStorageManager.Instance();
+export interface ITransformProgress {
+    startedAt: Date;
+    inputNodeCount: number;
+    outputNodeCount: number;
+}
 
-export async function applyTransform(tracing: ITracing, janeliaTracing: IJaneliaTracing, registrationTransform) {
-    debug(`initiating transform for janelia tracing ${janeliaTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
-    debug(`\ttransform location ${registrationTransform.location}`);
+const useFork = true;
 
-    try {
-        let janeliaNodes = await janeliaTracing.getNodes();
+export class TransformManager {
+    private _inProgressMap = new Map<string, ITransformProgress>();
 
-        const file = new hdf5.File(registrationTransform.location, Access.ACC_RDONLY);
+    public static Instance(): TransformManager {
+        return _manager;
+    }
 
-        const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
+    public statusForTracing(tracing: ITracing) {
+        return tracing ? this._inProgressMap.get(tracing.id) : null;
+    }
 
-        const stride = [1, 1, 1, 1];
+    public async applyTransform(tracing: ITracing, swcTracing: ISwcTracing, registrationTransform) {
+        if (!tracing || !swcTracing || !registrationTransform) {
+            debug("one or more input object is null|undefined");
+            return null;
+        }
 
-        const count = [3, 1, 1, 1];
+        if (!fs.existsSync(registrationTransform.location)) {
+            debug(`transform file ${registrationTransform.location} does not exist`);
+            return null;
+        }
 
-        const dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
-            start: stride,
-            stride: stride,
-            count: count
-        });
+        if (!fs.existsSync(ServerConfig.ontologyPath)) {
+            debug(`ontology file ${ServerConfig.ontologyPath} does not exist`);
+            return null;
+        }
 
-        debug(`transforming ${janeliaNodes.length} nodes`);
+        if (this._inProgressMap.has(tracing.id)) {
+            debug(`a transform for this tracing is already in progress`);
+            return null;
+        }
 
-        let nodes = janeliaNodes.map((janeliaNode, index) => {
-            // TODO Create real transformed nodes
+        if (useFork) {
+            this._inProgressMap.set(tracing.id, {startedAt: new Date(), inputNodeCount: 0, outputNodeCount: 0});
 
-            let transformedLocation = [NaN, NaN, NaN];
+            debug(`initiating transform for swc tracing ${swcTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
+            debug(`\ttransform location ${registrationTransform.location}`);
 
-            try {
-                const sourceLoc = [janeliaNode.x + janeliaTracing.offsetX, janeliaNode.y + janeliaTracing.offsetY, janeliaNode.z + janeliaTracing.offsetZ, 1];
+            const proc = fork(path.join(__dirname, "nodeWorker"), [tracing.id, swcTracing.id, registrationTransform.id], {
+                silent: true,
+                execArgv: []
+            });
 
-                // debug("source location");
-                // debug(sourceLoc);
+            proc.stdout.on("data", data => {
+                console.log(`${data.slice(0, -1)}`);
+            });
 
-                const transformedInput = matrixMultiply(sourceLoc, transformMatrix);
+            proc.stderr.on("data", data => {
+                console.error(`${data.slice(0, -1)}`);
+            });
 
-                // debug("transformed input");
-                // debug(transformedInput);
+            proc.on("exit", code => {
+                this._inProgressMap.delete(tracing.id);
+                debug(`node worker exit: ${code}`);
+            });
 
-                const start = [0, ...transformedInput.reverse()];
-                // debug("start");
-                // debug(start);
-
-                const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
-                    start: start,
-                    stride: stride,
-                    count: count
-                });
-
-                // Squeeze
-                const transformedOutput = dataset.data[0][0][0];
-
-                // debug("transformed output");
-                // debug(transformedOutput);
-
-                transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
-
-                // debug("transformed location");
-                // debug(transformedLocation);
-            } catch (err) {
-                debug(index);
-                debug(err);
-            }
-
-            return {
-                tracingId: tracing.id,
-                swcNodeId: janeliaNode.id,
-                sampleNumber: janeliaNode.sampleNumber,
-                x: transformedLocation[0],
-                y: transformedLocation[1],
-                z: transformedLocation[2],
-                radius: janeliaNode.radius,
-                parentNumber: janeliaNode.parentNumber
-            };
-        });
-
-        debug("transform complete");
-
-        hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
-
-        await storageManager.Nodes.destroy({where: {tracingId: tracing.id}, force: true});
-
-        await storageManager.Nodes.bulkCreate(nodes);
-
-        debug("inserted");
-    } catch (err) {
-        debug("transform exception");
-        console.log(err);
+            proc.on("message", data => {
+                if (data.tracing && data.status) {
+                    if (this._inProgressMap.has(data.tracing)) {
+                        let status = this._inProgressMap.get(data.tracing);
+                        status = Object.assign(status, data.status);
+                        this._inProgressMap.set(data.tracing, status);
+                    }
+                }
+            });
+        } else {
+            performNodeMap(tracing.id, swcTracing.id, registrationTransform.id);
+        }
     }
 }
-/*
- * To date, the only matrix operation we need, so not pulling in something like math.js.
- */
-function matrixMultiply(loc, transform) {
-    return transform.map((row) => {
-        return Math.ceil(row.reduce((sum, value, col) => {
-                return sum + (loc[col] * value);
-            }, 0)) - 1; // Zero-based - source is 1 based (MATLAB).
-    }).slice(0, 3);
-}
+
+const _manager: TransformManager = new TransformManager();
