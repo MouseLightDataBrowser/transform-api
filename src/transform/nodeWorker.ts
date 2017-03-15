@@ -60,9 +60,11 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         const file = new hdf5.File(registrationTransform.location, Access.ACC_RDONLY);
 
+        const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
+
         const brainAreaReferenceFile = new hdf5.File(ServerConfig.ontologyPath, Access.ACC_RDONLY);
 
-        const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
+        const brainTransformMatrix = brainAreaReferenceFile.getDatasetAttributes("OntologyAtlas")["Transformation_Matrix"];
 
         const stride = [1, 1, 1, 1];
 
@@ -125,10 +127,12 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
                 transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
 
+                const brainAreaInput = matrixMultiply([...transformedLocation, 1], brainTransformMatrix);
+
                 // debug("transformed location");
                 // debug(transformedLocation);
                 const brainAreaStructureId = hdf5.readDatasetHyperSlab(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset, ba_dataset_ref.rank, {
-                    start: start.slice(1),
+                    start: brainAreaInput.reverse(),
                     stride: [1, 1, 1],
                     count: [1, 1, 1]
                 });
