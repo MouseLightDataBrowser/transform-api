@@ -14,7 +14,7 @@ export interface ISwcTracing {
     getNodes(): ISwcNode[];
 }
 
-export const TableName = "Tracing";
+export const TableName = "SwcTracing";
 
 export function sequelizeImport(sequelize, DataTypes) {
     const Tracing = sequelize.define(TableName, {
@@ -54,7 +54,7 @@ export function sequelizeImport(sequelize, DataTypes) {
     }, {
         classMethods: {
             associate: models => {
-                Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "Nodes"});
+                Tracing.hasMany(models.SwcTracingNode, {foreignKey: "swcTracingId", as: "Nodes"});
                 Tracing.belongsTo(models.TracingStructure, {foreignKey: "tracingStructureId"});
             }
         },

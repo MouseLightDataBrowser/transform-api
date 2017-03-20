@@ -20,8 +20,8 @@ export interface ISampleDatabaseModels {
 }
 
 export interface ISwcDatabaseModels {
-    Tracing?: any;
-    TracingNode?: any;
+    SwcTracing?: any;
+    SwcTracingNode?: any;
     StructureIdentifier?: any;
     TracingStructure?: any;
 }
@@ -71,11 +71,11 @@ export class PersistentStorageManager {
     }
 
     public get SwcTracings() {
-        return this.swcDatabase.models.Tracing;
+        return this.swcDatabase.models.SwcTracing;
     }
 
     public get SwcNodes() {
-        return this.swcDatabase.models.TracingNode;
+        return this.swcDatabase.models.SwcTracingNode;
     }
 
     public get Tracings() {

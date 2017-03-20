@@ -59,11 +59,11 @@ type SwcTracing {
 type SwcNode {
     id: String!
     sampleNumber: Int
+    parentNumber: Int
     x: Float
     y: Float
     z: Float
     radius: Float
-    parentNumber: Int
     structureIdentifier: StructureIdentifier
     createdAt: Float
     updatedAt: Float
@@ -71,13 +71,13 @@ type SwcNode {
 
 type Tracing {
     id: String!
+    nodeCount: Int
+    transformedAt: Float
+    transformStatus: TransformStatus
+    firstNode: Node
     swcTracing: SwcTracing  
     registrationTransform: RegistrationTransform
-    firstNode: Node
-    nodeCount: Int
-    nodes: [Node]
-    transformStatus: TransformStatus
-    transformedAt: Float
+    tracingStructure: TracingStructure
     createdAt: Float
     updatedAt: Float
 }
@@ -92,6 +92,7 @@ type Node {
     parentNumber: Int
     lengthToParent: Float
     brainArea: BrainArea
+    structureIdentifier: StructureIdentifier
     swcNode: SwcNode
     createdAt: Float
     updatedAt: Float
@@ -111,16 +112,31 @@ type TransformStatus {
     outputNodeCount: Int
 }
 
+input PageInput {
+    tracingId: String
+    offset: Int
+    limit: Int
+}
+input FilterInput {
+    tracingStructureId: String
+    nodeStructureId: String
+    operator: String
+    limit: Int
+    brainAreaId: String
+    invert: Boolean
+}
+
 type Query {
      swcTracings: [SwcTracing!]!
      swcTracing(id: String): SwcTracing!
-     tracings: [Tracing!]!
+     tracings(structureId: String): [Tracing!]!
      tracing(id: String): Tracing!
-     tracingNodePage(id: String, offset: Int, limit: Int): NodePage
+     tracingNodePage(page: PageInput): NodePage
+     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
 }
 
 type Mutation {
-   transform(id: String!): Tracing
+   applyTransform(swcId: String!): Tracing
    reapplyTransform(id: String!): Tracing
 }
 

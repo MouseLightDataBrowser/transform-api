@@ -1,15 +1,17 @@
+import {IPageInput, validatePageInput} from "../../graphql/interfaces/page";
 export interface ITracingNode {
     id: string;
     tracingId: string;
     swcNodeId: string;
+    sampleNumber: number;
+    parentNumber: number;
     x: number;
     y: number;
     z: number;
     radius: number;
-    sampleNumber: number;
-    parentNumber: number;
-    brainAreaId: string;
     lengthToParent: number;
+    structureIdentifierId: string;
+    brainAreaId: string;
     updatedAt: Date;
 }
 
@@ -23,8 +25,6 @@ export interface INodePage {
 
 export const TableName = "TracingNode";
 
-const MAX_INT32 = Math.pow(2, 31) - 1;
-
 export function sequelizeImport(sequelize, DataTypes) {
     const TracingNode = sequelize.define(TableName, {
         id: {
@@ -32,18 +32,19 @@ export function sequelizeImport(sequelize, DataTypes) {
             type: DataTypes.UUID,
             defaultValue: DataTypes.UUIDV4
         },
-        // reference to original, unmodified node from swc database
-        swcNodeId: DataTypes.UUID,
         // Unchanged values
         sampleNumber: DataTypes.INTEGER,
         parentNumber: DataTypes.INTEGER,
         radius: DataTypes.DOUBLE,
+        lengthToParent: DataTypes.DOUBLE,
+        structureIdentifierId: DataTypes.UUID,
         // Modified values
         x: DataTypes.DOUBLE,
         y: DataTypes.DOUBLE,
         z: DataTypes.DOUBLE,
-        brainAreaId: DataTypes.UUID,
-        lengthToParent: DataTypes.DOUBLE
+        // Outside refs
+        swcNodeId: DataTypes.UUID,
+        brainAreaId: DataTypes.UUID
     }, {
         classMethods: {
             associate: models => {
@@ -54,30 +55,27 @@ export function sequelizeImport(sequelize, DataTypes) {
         paranoid: false
     });
 
-    TracingNode.getNodePage = async(tracingId: string, reqOffset: number, reqLimit: number): Promise<INodePage> => {
-        let offset = 0;
-        let limit = MAX_INT32;
+    TracingNode.getNodePage = async (page: IPageInput): Promise<INodePage> => {
+        page = validatePageInput(page);
 
-        if (reqOffset !== null && reqOffset !== undefined) {
-            offset = reqOffset;
-        }
+        let where = {};
 
-        if (reqLimit !== null && reqLimit !== undefined) {
-            limit = reqLimit;
+        if (page.tracingId) {
+            where = {tracingId: page.tracingId};
         }
 
         const result = await TracingNode.findAndCount({
-            where: {tracingId: tracingId},
-            offset: offset,
-            limit: limit,
+            where: where,
+            offset: page.offset,
+            limit: page.limit,
             order: [["sampleNumber", "ASC"]]
         });
 
         return {
-            offset: offset,
-            limit: limit,
+            offset: page.offset,
+            limit: page.limit,
             totalCount: result.count as number,
-            hasNextPage: offset + limit < result.count,
+            hasNextPage: page.offset + page.limit < result.count,
             nodes: result.rows as ITracingNode[]
         }
     };

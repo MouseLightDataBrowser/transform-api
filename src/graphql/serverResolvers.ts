@@ -11,16 +11,37 @@ import {IBrainArea} from "../models/sample/brainArea";
 import {TransformManager, ITransformProgress} from "../transform/transformWorker";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IStructureIdentifier} from "../models/swc/structureIdentifier";
+import {IPageInput} from "./interfaces/page";
 
 interface IIdOnlyArguments {
     id: string;
 }
 
+interface ITransformArguments {
+    swcId: string;
+}
+
+interface ITracingsArguments {
+    structureId: string;
+}
+
 
 interface INodePageArguments {
-    id: string;
-    offset: number;
+    page: IPageInput;
+}
+
+export interface IFilterInput {
+    tracingStructureId: string;
+    nodeStructureId: string;
+    operator: string;
     limit: number;
+    brainAreaId: string;
+    invert: boolean;
+}
+
+interface ITracingNodePage2Arguments {
+    page: IPageInput;
+    filters: IFilterInput[];
 }
 
 const resolvers = {
@@ -32,22 +53,22 @@ const resolvers = {
             debug(args.id);
             return context.getJaneliaTracing(args.id);
         },
-        tracings(_, __, context: IGraphQLServerContext): Promise<ITracing[]> {
-            return context.getTracings();
+        tracings(_, args: ITracingsArguments, context: IGraphQLServerContext): Promise<ITracing[]> {
+            return context.getTracings(args.structureId);
         },
         tracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
             return context.getTracing(args.id);
         },
         tracingNodePage(_, args: INodePageArguments, context: IGraphQLServerContext): Promise<INodePage> {
-            if (!args.id) {
-                return null;
-            }
-            return context.getNodePage(args.id, args.offset, args.limit);
+            return context.getNodePage(args.page);
+        },
+        tracingNodePage2(_, args: ITracingNodePage2Arguments, context: IGraphQLServerContext): Promise<INodePage> {
+            return context.getNodePage2(args.page, args.filters);
         }
     },
     Mutation: {
-        transform(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
-            return context.transform(args.id);
+        applyTransform(_, args: ITransformArguments, context: IGraphQLServerContext): Promise<ITracing> {
+            return context.applyTransform(args.swcId);
         },
         reapplyTransform(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
             return context.reapplyTransform(args.id);
@@ -58,7 +79,7 @@ const resolvers = {
             return context.getFirstJaneliaNode(tracing);
         },
         tracingStructure(tracing, _, context: IGraphQLServerContext): Promise<ITracingStructure> {
-            return context.getTracingStructure(tracing);
+            return context.getSwcTracingStructure(tracing);
         }
     },
     SwcNode: {
@@ -73,8 +94,8 @@ const resolvers = {
         registrationTransform(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IRegistrationTransform> {
             return context.getRegistrationTransform(tracing.registrationTransformId);
         },
-        nodes(tracing, _, context: IGraphQLServerContext): ITracingNode[] {
-            return [];
+        tracingStructure(tracing, _, context: IGraphQLServerContext): Promise<ITracingStructure> {
+            return context.getTracingStructure(tracing);
         },
         nodeCount(tracing, _, context: IGraphQLServerContext): Promise<number> {
             return context.getNodeCount(tracing);
@@ -87,11 +108,14 @@ const resolvers = {
         },
     },
     Node: {
-        brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
-            return context.getNodeBrainArea(node);
-        },
         swcNode(node, _, context: IGraphQLServerContext): Promise<ISwcNode> {
             return context.getNodeSwcNode(node);
+        },
+        structureIdentifier(node, _, context: IGraphQLServerContext): Promise<IStructureIdentifier> {
+            return context.getNodeStructureIdentifier(node);
+        },
+        brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
+            return context.getNodeBrainArea(node);
         }
     }
 };

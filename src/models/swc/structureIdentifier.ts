@@ -19,7 +19,7 @@ export function sequelizeImport(sequelize, DataTypes) {
     }, {
         classMethods: {
             associate: models => {
-                StructureIdentifier.hasMany(models.TracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
+                StructureIdentifier.hasMany(models.SwcTracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
             }
         },
         timestamps: true,

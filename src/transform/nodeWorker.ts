@@ -84,7 +84,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         debug(`transforming ${swcNodes.length} nodes`);
 
-        let nodes = swcNodes.map((janeliaNode, index) => {
+        let nodes = swcNodes.map((swcNode, index) => {
 
             if (isFork) {
                 if (index % 100 === 0) {
@@ -99,7 +99,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
             let lengthToParent = NaN;
 
             try {
-                const sourceLoc = [janeliaNode.x + swcTracing.offsetX, janeliaNode.y + swcTracing.offsetY, janeliaNode.z + swcTracing.offsetZ, 1];
+                const sourceLoc = [swcNode.x + swcTracing.offsetX, swcNode.y + swcTracing.offsetY, swcNode.z + swcTracing.offsetZ, 1];
 
                 // debug("source location");
                 // debug(sourceLoc);
@@ -150,13 +150,14 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
             return {
                 tracingId: tracing.id,
-                swcNodeId: janeliaNode.id,
-                sampleNumber: janeliaNode.sampleNumber,
+                swcNodeId: swcNode.id,
+                sampleNumber: swcNode.sampleNumber,
                 x: transformedLocation[0],
                 y: transformedLocation[1],
                 z: transformedLocation[2],
-                radius: janeliaNode.radius,
-                parentNumber: janeliaNode.parentNumber,
+                radius: swcNode.radius,
+                parentNumber: swcNode.parentNumber,
+                structureIdentifierId: swcNode.structureIdentifierId,
                 brainAreaId: brainAreaId,
                 lengthToParent: lengthToParent
             };
