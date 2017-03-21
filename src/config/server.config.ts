@@ -24,7 +24,7 @@ const configurations: IConfiguration<IServerConfig> = {
         graphiQlEndpoint: "/graphiql",
         envName: "",
         dbEnvName: "",
-        ontologyPath: "/Volumes/Spare/Projects/Neuron Data Browser/OntologyAtlas.h5"
+        ontologyPath: "/groups/mousebrainmicro/mousebrainmicro/registration/Allen Atlas/OntologyAtlas.h5"
     },
     stage: {
         port: 9661,
