@@ -16,7 +16,7 @@ const configurations: IConfiguration<IServerConfig> = {
         graphiQlEndpoint: "/graphiql",
         envName: "",
         dbEnvName: "",
-        ontologyPath: "/Volumes/Spare/Projects/Neuron Data Browser/OntologyAtlas.h5"
+        ontologyPath: "/Volumes/Spare/Projects/Neuron Data Browser/registration/Allen Atlas/OntologyAtlas.h5"
     },
     test: {
         port: 9661,

@@ -1,3 +1,6 @@
+const unique = require("array-unique");
+import {PubSub} from "graphql-subscriptions";
+
 import {IStructureIdentifier} from "../models/swc/structureIdentifier";
 const debug = require("debug")("ndb:transform:context");
 
@@ -8,15 +11,24 @@ import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {ITracingNode, INodePage} from "../models/transform/tracingNode";
 import {IBrainArea} from "../models/sample/brainArea";
-import {TransformManager} from "../transform/transformWorker";
+import {ITransformResult, TransformManager} from "../transform/transformWorker";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
 import {IPageInput} from "./interfaces/page";
+import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
+
+export const pubSub = new PubSub();
 
 export interface IGraphQLServerContext {
-    getJaneliaTracings(): Promise<ISwcTracing[]>;
-    getJaneliaTracing(id: string): Promise<ISwcTracing>;
-    getFirstJaneliaNode(tracing: ISwcTracing): Promise<ISwcNode>;
+    getBrainAreas(): Promise<IBrainArea[]>;
+    getStructureIdentifiers(): Promise<IStructureIdentifier[]>;
+
+    getTracingStructures(): Promise<ITracingStructure[]>;
+
+    getSwcTracings(): Promise<ISwcTracing[]>;
+    getSwcTracing(id: string): Promise<ISwcTracing>;
+    getSwcNodeCount(tracing: ISwcTracing): Promise<number>;
+    getFirstSwcNode(tracing: ISwcTracing): Promise<ISwcNode>;
     getSwcTracingStructure(tracing: ISwcTracing): Promise<ITracingStructure>;
     getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier>;
 
@@ -34,24 +46,48 @@ export interface IGraphQLServerContext {
 
     getRegistrationTransform(id: string): Promise<IRegistrationTransform>;
 
-    applyTransform(swcTracingId: string): Promise<ITracing>;
-    reapplyTransform(tracingId: string): Promise<ITracing>;
+    getBrainCompartmentContents(): Promise<IBrainCompartment[]>
+
+    getUntransformedSwc(): Promise<ISwcTracing[]>;
+
+    applyTransform(swcTracingId: string): Promise<ITransformResult>;
+    reapplyTransform(tracingId: string): Promise<ITransformResult>;
 }
 
 export class GraphQLServerContext implements IGraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
 
-    public async getJaneliaTracings(): Promise<ISwcTracing[]> {
+    public async getBrainAreas(): Promise<IBrainArea[]> {
+        return this._storageManager.BrainAreas.findAll({});
+    }
+
+    public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
+        return this._storageManager.StructureIdentifiers.findAll({});
+    }
+
+    public async getTracingStructures(): Promise<ITracingStructure[]> {
+        return this._storageManager.TracingStructures.findAll({});
+    }
+
+    public async getSwcTracings(): Promise<ISwcTracing[]> {
         return this._storageManager.SwcTracings.findAll({});
     }
 
-    public async getJaneliaTracing(id: string): Promise<ISwcTracing> {
+    public async getSwcTracing(id: string): Promise<ISwcTracing> {
         const result = await this._storageManager.SwcTracings.findAll({where: {id: id}});
 
         return (result && result.length > 0) ? result[0] : null;
     }
 
-    public async getFirstJaneliaNode(tracing: ISwcTracing): Promise<ISwcNode> {
+    public async getSwcNodeCount(tracing: ISwcTracing): Promise<number> {
+        if (!tracing) {
+            return 0;
+        }
+
+        return await this._storageManager.SwcNodes.count({where: {swcTracingId: tracing.id}});
+    }
+
+    public async getFirstSwcNode(tracing: ISwcTracing): Promise<ISwcNode> {
         return await this._storageManager.SwcNodes.findOne({where: {sampleNumber: 1, swcTracingId: tracing.id}});
     }
 
@@ -69,14 +105,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         if (!structureId) {
             return this._storageManager.Tracings.findAll({});
         } else {
-            const swcTracings = await this._storageManager.SwcTracings.findAll({
-                attributes: ["id"],
-                where: {tracingStructureId: structureId}
-            });
-
-            const ids = swcTracings.map(swc => swc.id);
-
-            return this._storageManager.Tracings.findAll({where: {swcTracingId: {$in: ids}}});
+            return this._storageManager.Tracings.findAll({where: {tracingStructureId: structureId}});
         }
     }
 
@@ -122,7 +151,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return null;
     }
 
-    public async applyTransform(swcTracingId: string): Promise<ITracing> {
+    public async applyTransform(swcTracingId: string): Promise<ITransformResult> {
         const swcTracing = await this._storageManager.SwcTracings.findOne({where: {id: swcTracingId}});
 
         const neuron = await this._storageManager.Neurons.findOne({where: {id: swcTracing.neuronId}});
@@ -134,19 +163,21 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         // Can have a sample w/o registration transform at the moment.  Should block upload/selection of neurons where
         // not set.
         if (!sample.activeRegistrationTransformId) {
-            return null;
+            return {tracing: null, errors: [`The associated sample does not have an active registration transform.`]};
         }
 
         const registrationTransform = await this._storageManager.RegistrationTransforms.findOne({where: {id: sample.activeRegistrationTransformId}});
 
-        const tracing = await this._storageManager.Tracings.findForJaneliaTracing(swcTracing, registrationTransform);
+        const tracing = await this._storageManager.Tracings.findForSwcTracing(swcTracing, registrationTransform);
 
-        setTimeout(() => TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform), 0);
+        const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
 
-        return tracing;
+        pubSub.publish("transformApplied", swcTracing);
+
+        return result;
     }
 
-    public async reapplyTransform(tracingId: string): Promise<ITracing> {
+    public async reapplyTransform(tracingId: string): Promise<ITransformResult> {
         const tracing = await this.getTracing(tracingId);
 
         if (tracing) {
@@ -154,13 +185,14 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             const registrationTransform = await this._storageManager.RegistrationTransforms.findOne({where: {id: tracing.registrationTransformId}});
 
-            if (swcTracing && registrationTransform) {
-                setTimeout(() => TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform), 0);
-                return tracing;
-            }
+            const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
+
+            pubSub.publish("transformApplied", swcTracing);
+
+            return result;
         }
 
-        return null;
+        return {tracing: null, errors: [`Could not locate tracing`]};
     }
 
     public async getNodeBrainArea(node: ITracingNode): Promise<IBrainArea> {
@@ -177,5 +209,27 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getNodeStructureIdentifier(node: ITracingNode): Promise<IStructureIdentifier> {
         return this._storageManager.StructureIdentifiers.findOne({where: {id: node.structureIdentifierId}})
+    }
+
+    public async getBrainCompartmentContents(): Promise<IBrainCompartment[]> {
+        return this._storageManager.BrainCompartment.findAll({});
+    }
+
+    public async getUntransformedSwc(): Promise<ISwcTracing[]> {
+        const obj = await this._storageManager.Tracings.findAll({attributes: ["swcTracingId"]});
+
+        if (obj.length === 0) {
+            return this._storageManager.SwcTracings.findAll({});
+        }
+
+        const ids = unique(obj.map(o => o.swcTracingId));
+
+        return this._storageManager.SwcTracings.findAll({
+            where: {
+                id: {
+                    $notIn: ids
+                }
+            }
+        });
     }
 }

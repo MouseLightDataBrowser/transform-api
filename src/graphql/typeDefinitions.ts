@@ -1,4 +1,10 @@
 let typeDefinitions = `
+type QueryOperator {
+    id: Int
+    display: String
+    operator: String
+}
+
 type BrainArea {
     id: String!
     name: String
@@ -50,6 +56,7 @@ type SwcTracing {
     offsetX: Float
     offsetY: Float
     offsetZ: Float
+    nodeCount: Int
     firstNode: SwcNode
     tracingStructure: TracingStructure
     createdAt: Float
@@ -78,6 +85,10 @@ type Tracing {
     swcTracing: SwcTracing  
     registrationTransform: RegistrationTransform
     tracingStructure: TracingStructure
+    nodeCount: Int
+    pathCount: Int
+    branchCount: Int
+    endCount: Int
     createdAt: Float
     updatedAt: Float
 }
@@ -112,6 +123,21 @@ type TransformStatus {
     outputNodeCount: Int
 }
 
+type TransformMutationResult {
+    tracing: Tracing
+    errors: [String]
+}
+
+type BrainCompartmentContent {
+    id: String
+    brainArea: BrainArea
+    tracing: Tracing
+    nodeCount: Int
+    pathCount: Int
+    branchCount: Int
+    endCount: Int
+}
+
 input PageInput {
     tracingId: String
     offset: Int
@@ -119,30 +145,42 @@ input PageInput {
 }
 input FilterInput {
     tracingStructureId: String
-    nodeStructureId: String
+    nodeStructureIds: [String!]
     operator: String
-    limit: Int
-    brainAreaId: String
+    constraint: Int
+    brainAreaIds: [String!]
     invert: Boolean
+    composition: Int
 }
 
 type Query {
-     swcTracings: [SwcTracing!]!
-     swcTracing(id: String): SwcTracing!
-     tracings(structureId: String): [Tracing!]!
-     tracing(id: String): Tracing!
-     tracingNodePage(page: PageInput): NodePage
-     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
+    queryOperators: [QueryOperator!]!
+    brainAreas: [BrainArea!]!
+    structureIdentifiers: [StructureIdentifier!]!
+    tracingStructures: [TracingStructure!]!
+    swcTracings: [SwcTracing!]!
+    swcTracing(id: String): SwcTracing!
+    tracings(structureId: String): [Tracing!]!
+    tracing(id: String): Tracing!
+    tracingNodePage(page: PageInput): NodePage
+    tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
+    brainCompartmentContents: [BrainCompartmentContent!]!
+    untransformedSwc: [SwcTracing!]!
 }
 
 type Mutation {
-   applyTransform(swcId: String!): Tracing
-   reapplyTransform(id: String!): Tracing
+   applyTransform(swcId: String!): TransformMutationResult
+   reapplyTransform(id: String!): TransformMutationResult
+}
+
+type Subscription {
+    transformApplied: SwcTracing
 }
 
 schema {
   query: Query
   mutation: Mutation
+  subscription: Subscription
 }`;
 
 export default typeDefinitions;

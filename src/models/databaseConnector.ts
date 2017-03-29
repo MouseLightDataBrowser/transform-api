@@ -29,6 +29,7 @@ export interface ISwcDatabaseModels {
 export interface ITransformDatabaseModels {
     Tracing?: any;
     TracingNode?: any;
+    BrainCompartmentContents?: any;
 }
 
 export interface ISequelizeDatabase<T> {
@@ -84,6 +85,9 @@ export class PersistentStorageManager {
 
     public get Nodes() {
         return this.transformDatabase.models.TracingNode;
+    }
+    public get BrainCompartment() {
+        return this.transformDatabase.models.BrainCompartmentContents;
     }
 
     public async initialize() {

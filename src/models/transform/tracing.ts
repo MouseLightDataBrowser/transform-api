@@ -6,6 +6,10 @@ export interface ITracing {
     swcTracingId: string;
     registrationTransformId: string;
     tracingStructureId: string;
+    nodeCount: number;
+    pathCount: number;
+    branchCount: number;
+    endCount: number;
     transformedAt: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -28,6 +32,10 @@ export function sequelizeImport(sequelize, DataTypes) {
         // reference to registration transform from sample database
         registrationTransformId: DataTypes.UUID,
         tracingStructureId: DataTypes.UUID,
+        nodeCount: DataTypes.INTEGER,
+        pathCount: DataTypes.INTEGER,
+        branchCount: DataTypes.INTEGER,
+        endCount: DataTypes.INTEGER,
         transformedAt: DataTypes.DATE
     }, {
         classMethods: {
@@ -39,7 +47,7 @@ export function sequelizeImport(sequelize, DataTypes) {
         paranoid: false
     });
 
-    Tracing.findForJaneliaTracing = async(swcTracing: ISwcTracing, registration) => {
+    Tracing.findForSwcTracing = async(swcTracing: ISwcTracing, registration) => {
         const result = await Tracing.findOrCreate({where: {swcTracingId: swcTracing.id, registrationTransformId: registration.id, tracingStructureId: swcTracing.tracingStructureId}});
 
         return (result && result.length > 0) ? result[0] : null;

@@ -4,6 +4,17 @@ export interface IStructureIdentifier {
     value: number;
     mutable: boolean;
 }
+
+export enum StructureIdentifiers {
+    undefined = 0,
+    soma = 1,
+    axon = 2,
+    basalDendrite = 3,
+    apicalDendrite = 4,
+    forkPoint = 5,
+    endPoint = 6
+}
+
 export const TableName = "StructureIdentifier";
 
 export function sequelizeImport(sequelize, DataTypes) {
@@ -25,6 +36,20 @@ export function sequelizeImport(sequelize, DataTypes) {
         timestamps: true,
         paranoid: true
     });
+
+    const map = new Map<string, number>();
+
+    StructureIdentifier.idValueMap = async () => {
+        if (map.size === 0) {
+            const all = await StructureIdentifier.findAll({});
+
+            all.forEach(s => {
+                map.set(s.id, s.value);
+            });
+        }
+
+        return map;
+    };
 
     return StructureIdentifier;
 }

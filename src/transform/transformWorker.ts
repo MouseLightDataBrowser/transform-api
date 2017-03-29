@@ -15,6 +15,11 @@ export interface ITransformProgress {
     outputNodeCount: number;
 }
 
+export interface ITransformResult {
+    tracing: ITracing,
+    errors: string[];
+}
+
 const useFork = true;
 
 export class TransformManager {
@@ -28,25 +33,25 @@ export class TransformManager {
         return tracing ? this._inProgressMap.get(tracing.id) : null;
     }
 
-    public async applyTransform(tracing: ITracing, swcTracing: ISwcTracing, registrationTransform) {
+    public async applyTransform(tracing: ITracing, swcTracing: ISwcTracing, registrationTransform): Promise<ITransformResult> {
         if (!tracing || !swcTracing || !registrationTransform) {
             debug("one or more input object is null|undefined");
-            return null;
+            return {tracing: null, errors: ["one or more input object is null|undefined"]};
         }
 
         if (!fs.existsSync(registrationTransform.location)) {
             debug(`transform file ${registrationTransform.location} does not exist`);
-            return null;
+            return {tracing: null, errors: [`transform file ${registrationTransform.location} does not exist`]};
         }
 
         if (!fs.existsSync(ServerConfig.ontologyPath)) {
             debug(`ontology file ${ServerConfig.ontologyPath} does not exist`);
-            return null;
+            return {tracing: null, errors: [`ontology file ${ServerConfig.ontologyPath} does not exist`]};
         }
 
         if (this._inProgressMap.has(tracing.id)) {
             debug(`a transform for this tracing is already in progress`);
-            return null;
+            return {tracing: null, errors: [`a transform for this tracing is already in progress`]};
         }
 
         if (useFork) {
@@ -83,8 +88,10 @@ export class TransformManager {
                 }
             });
         } else {
-            performNodeMap(tracing.id, swcTracing.id, registrationTransform.id);
+            setTimeout(() => performNodeMap(tracing.id, swcTracing.id, registrationTransform.id), 0);
         }
+
+        return {tracing: tracing, errors: []}
     }
 }
 
