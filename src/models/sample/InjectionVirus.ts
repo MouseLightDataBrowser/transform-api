@@ -16,7 +16,7 @@ export function sequelizeImport(sequelize, DataTypes) {
         },
         timestamps: true,
         paranoid: true,
-        tableName: 'InjectionViruses'
+        tableName: "InjectionViruses"
     });
 
     return InjectionVirus;

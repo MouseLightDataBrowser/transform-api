@@ -13,6 +13,8 @@ import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IStructureIdentifier} from "../models/swc/structureIdentifier";
 import {IPageInput} from "./interfaces/page";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
+import {IQueryOperator, operators} from "../models/search/queryOperator";
+import {INeuron} from "../models/sample/neuron";
 
 interface IIdOnlyArguments {
     id: string;
@@ -33,56 +35,22 @@ interface INodePageArguments {
 
 export interface IFilterInput {
     tracingStructureId: string;
-    nodeStructureId: string;
-    operator: string;
-    limit: number;
-    brainAreaId: string;
+    nodeStructureIds: string[];
+    operatorId: string;
+    amount: number;
+    brainAreaIds: string[];
     invert: boolean;
+    composition: number;
+}
+
+interface ITracingsPageArguments {
+    filters: IFilterInput[];
 }
 
 interface ITracingNodePage2Arguments {
     page: IPageInput;
     filters: IFilterInput[];
 }
-
-interface IQueryOperator {
-    id: number;
-    display: string;
-    operator: string;
-}
-
-const operators: IQueryOperator[] = [
-    {
-        id: 1,
-        display: "=",
-        operator: "$eq"
-    },
-    {
-        id: 2,
-        display: "≠",
-        operator: "ne"
-    },
-    {
-        id: 3,
-        display: ">",
-        operator: "gt"
-    },
-    {
-        id: 4,
-        display: "<",
-        operator: "lt"
-    },
-    {
-        id: 5,
-        display: "≥",
-        operator: "gte"
-    },
-    {
-        id: 6,
-        display: "≤",
-        operator: "lte"
-    }
-];
 
 const resolvers = {
     Query: {
@@ -102,7 +70,6 @@ const resolvers = {
             return context.getSwcTracings();
         },
         swcTracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ISwcTracing> {
-            debug(args.id);
             return context.getSwcTracing(args.id);
         },
         tracings(_, args: ITracingsArguments, context: IGraphQLServerContext): Promise<ITracing[]> {
@@ -110,6 +77,9 @@ const resolvers = {
         },
         tracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
             return context.getTracing(args.id);
+        },
+        tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<IBrainCompartment[]> {
+            return context.getTracingsWithFilters(args.filters);
         },
         tracingNodePage(_, args: INodePageArguments, context: IGraphQLServerContext): Promise<INodePage> {
             return context.getNodePage(args.page);
@@ -146,6 +116,9 @@ const resolvers = {
         },
         tracingStructure(tracing, _, context: IGraphQLServerContext): Promise<ITracingStructure> {
             return context.getSwcTracingStructure(tracing);
+        },
+        neuron(tracing, _, context: IGraphQLServerContext): Promise<INeuron> {
+            return context.getNeuron(tracing.neuronId);
         }
     },
     SwcNode: {
@@ -182,6 +155,14 @@ const resolvers = {
         },
         brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
             return context.getNodeBrainArea(node);
+        }
+    },
+    BrainCompartmentContent: {
+        tracing(compartment: IBrainCompartment, _, context: IGraphQLServerContext): Promise<ITracing> {
+            return context.getTracing(compartment.tracingId);
+        },
+        brainArea(compartment: IBrainCompartment, _, context: IGraphQLServerContext): Promise<IBrainArea> {
+            return context.getBrainArea(compartment.brainAreaId);
         }
     }
 };

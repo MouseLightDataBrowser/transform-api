@@ -4,6 +4,7 @@ export interface IBrainCompartment {
     tracingId: string;
     brainAreaId: string;
     nodeCount: number;
+    somaCount: number;
     pathCount: number;
     branchCount: number;
     endCount: number;
@@ -20,10 +21,11 @@ export function sequelizeImport(sequelize, DataTypes) {
             type: DataTypes.UUID
         },
         brainAreaId: DataTypes.UUID,
-        nodeCount: DataTypes.UUID,
-        pathCount: DataTypes.UUID,
-        branchCount: DataTypes.UUID,
-        endCount: DataTypes.UUID,
+        nodeCount: DataTypes.INTEGER,
+        somaCount: DataTypes.INTEGER,
+        pathCount: DataTypes.INTEGER,
+        branchCount: DataTypes.INTEGER,
+        endCount: DataTypes.INTEGER,
         tracingId: {
             type: DataTypes.UUID,
             references: {
@@ -34,6 +36,7 @@ export function sequelizeImport(sequelize, DataTypes) {
     }, {
         classMethods: {
             associate: models => {
+                BrainCompartmentContents.belongsTo(models.Tracing, {foreignKey: "tracingId"});
             }
         },
         timestamps: true,

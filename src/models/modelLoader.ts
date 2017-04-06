@@ -18,6 +18,10 @@ export function loadModels<T>(db: ISequelizeDatabase<T>, modelLocation: string) 
         if (db.models[modelName].associate) {
             db.models[modelName].associate(db.models);
         }
+
+        if (db.models[modelName].prepareContents) {
+            db.models[modelName].prepareContents(db.models);
+        }
     });
 
     return db;

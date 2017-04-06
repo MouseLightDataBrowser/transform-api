@@ -31,6 +31,9 @@ export function sequelizeImport(sequelize, DataTypes) {
         classMethods: {
             associate: models => {
                 StructureIdentifier.hasMany(models.SwcTracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
+            },
+            prepareContents: () => {
+                StructureIdentifier.buildIdValueMap();
             }
         },
         timestamps: true,
@@ -39,7 +42,7 @@ export function sequelizeImport(sequelize, DataTypes) {
 
     const map = new Map<string, number>();
 
-    StructureIdentifier.idValueMap = async () => {
+    StructureIdentifier.buildIdValueMap = async () => {
         if (map.size === 0) {
             const all = await StructureIdentifier.findAll({});
 
@@ -47,8 +50,43 @@ export function sequelizeImport(sequelize, DataTypes) {
                 map.set(s.id, s.value);
             });
         }
+    };
 
-        return map;
+    StructureIdentifier.idValue = (id: string) => {
+        return map.get(id);
+    };
+
+    StructureIdentifier.countColumnName = (s: number | string | IStructureIdentifier) => {
+        if (s === null || s === undefined) {
+            return null;
+        }
+
+        let value: number = null;
+
+        if (typeof s === "number") {
+            value = s;
+        } else if (typeof s === "string") {
+            value = map.get(s);
+        } else {
+            value = s.value;
+        }
+
+        if (value === null || value === undefined) {
+            return null;
+        }
+
+        switch (value) {
+            case StructureIdentifiers.soma:
+                return "somaCount";
+            case StructureIdentifiers.undefined:
+                return "pathCount";
+            case StructureIdentifiers.forkPoint:
+                return "branchCount";
+            case  StructureIdentifiers.endPoint:
+                return "endCount";
+        }
+
+        return null;
     };
 
     return StructureIdentifier;

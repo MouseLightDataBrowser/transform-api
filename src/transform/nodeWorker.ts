@@ -30,8 +30,9 @@ if (tracingId && swcTracingId && registrationTransformId) {
 
 }
 
-interface brainCompartmentCounts {
+interface IBrainCompartmentCounts {
     node: number;
+    soma: number;
     path: number;
     branch: number;
     end: number;
@@ -102,16 +103,15 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         debug(`transforming ${swcNodes.length} nodes`);
 
-        const compartmentMap = new Map<string, brainCompartmentCounts>();
+        const compartmentMap = new Map<string, IBrainCompartmentCounts>();
 
-        const tracingCounts = {
+        const tracingCounts: IBrainCompartmentCounts = {
             node: 0,
+            soma: 0,
             path: 0,
             branch: 0,
             end: 0
         };
-
-        const structureMap: Map<string, number> = await storageManager.StructureIdentifiers.idValueMap();
 
         let nodes = swcNodes.map((swcNode, index) => {
 
@@ -176,6 +176,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
                 if (!compartmentMap.has(brainAreaId)) {
                     compartmentMap.set(brainAreaId, {
                         node: 0,
+                        soma: 0,
                         path: 0,
                         branch: 0,
                         end: 0
@@ -186,8 +187,9 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
                 counts.node += 1;
 
-                switch (structureMap.get(swcNode.structureIdentifierId)) {
+                switch (storageManager.StructureIdentifiers.idValue(swcNode.structureIdentifierId)) {
                     case StructureIdentifiers.soma:
+                        counts.soma++;
                         break;
                     case StructureIdentifiers.forkPoint:
                         counts.branch++;
@@ -200,8 +202,9 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
                 }
             }
 
-            switch (structureMap.get(swcNode.structureIdentifierId)) {
+            switch (storageManager.StructureIdentifiers.idValue(swcNode.structureIdentifierId)) {
                 case StructureIdentifiers.soma:
+                    tracingCounts.soma++;
                     break;
                 case StructureIdentifiers.forkPoint:
                     tracingCounts.branch++;
@@ -258,6 +261,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
                 brainAreaId: entry[0],
                 tracingId: tracing.id,
                 nodeCount: entry[1].node,
+                somaCount: entry[1].soma,
                 pathCount: entry[1].path,
                 branchCount: entry[1].branch,
                 endCount: entry[1].end

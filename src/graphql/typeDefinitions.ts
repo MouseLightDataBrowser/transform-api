@@ -1,6 +1,6 @@
 let typeDefinitions = `
 type QueryOperator {
-    id: Int
+    id: String
     display: String
     operator: String
 }
@@ -48,6 +48,15 @@ type RegistrationTransform {
     updatedAt: Float
 }
 
+type Neuron {
+    id: String!
+    idNumber: Int
+    tag: String
+    keywords: String
+    createdAt: Float
+    updatedAt: Float
+}
+
 type SwcTracing {
     id: String!
     filename: String
@@ -59,6 +68,7 @@ type SwcTracing {
     nodeCount: Int
     firstNode: SwcNode
     tracingStructure: TracingStructure
+    neuron: Neuron
     createdAt: Float
     updatedAt: Float
 }
@@ -133,6 +143,7 @@ type BrainCompartmentContent {
     brainArea: BrainArea
     tracing: Tracing
     nodeCount: Int
+    somaCount: Int
     pathCount: Int
     branchCount: Int
     endCount: Int
@@ -146,8 +157,8 @@ input PageInput {
 input FilterInput {
     tracingStructureId: String
     nodeStructureIds: [String!]
-    operator: String
-    constraint: Int
+    operatorId: String
+    amount: Float
     brainAreaIds: [String!]
     invert: Boolean
     composition: Int
@@ -162,6 +173,7 @@ type Query {
     swcTracing(id: String): SwcTracing!
     tracings(structureId: String): [Tracing!]!
     tracing(id: String): Tracing!
+    tracingsPage(filters: [FilterInput!]): [BrainCompartmentContent!]!
     tracingNodePage(page: PageInput): NodePage
     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
     brainCompartmentContents: [BrainCompartmentContent!]!

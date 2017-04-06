@@ -19,6 +19,7 @@
     "graphql-subscriptions": "^0.3.1",
     "graphql-tools": "^0.10.1",
     "hdf5": "git+https://github.com/pedson/hdf5.node.git#779be9d8485838d9ff5a246ab2775151331089ea",
+    "influx": "^5.0.6",
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
     "subscriptions-transport-ws": "^0.5.5-alpha.0",

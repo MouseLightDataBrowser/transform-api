@@ -1,3 +1,4 @@
+const Influx = require("influx");
 const Sequelize = require("sequelize");
 
 const debug = require("debug")("ndb:transform:database-connector");
@@ -86,8 +87,24 @@ export class PersistentStorageManager {
     public get Nodes() {
         return this.transformDatabase.models.TracingNode;
     }
+
     public get BrainCompartment() {
         return this.transformDatabase.models.BrainCompartmentContents;
+    }
+
+    public async logQuery(queryObject: any, querySql: any, errors: any, duration: number) {
+        this.influxDatabase.writePoints([
+            {
+                measurement: "query_response_times",
+                tags: {user: "none"},
+                fields: {
+                    queryObject: JSON.stringify(queryObject),
+                    querySql: JSON.stringify(querySql),
+                    errors: JSON.stringify(errors),
+                    duration
+                },
+            }
+        ]);
     }
 
     public async initialize() {
@@ -99,6 +116,7 @@ export class PersistentStorageManager {
     private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels> = createConnection("sample", {});
     private swcDatabase: ISequelizeDatabase<ISwcDatabaseModels> = createConnection("swc", {});
     private transformDatabase: ISequelizeDatabase<ITransformDatabaseModels> = createConnection("transform", {});
+    private influxDatabase = establishInfluxConnection();
 }
 
 async function authenticate(database, name) {
@@ -117,13 +135,7 @@ async function authenticate(database, name) {
 
 function createConnection<T>(name: string, models: T) {
     // Pull the host information from the regular node env.  Local vs. docker container, etc.
-    const hostInfo = config["hosts"][name][ServerConfig.envName];
-
-    // Option to override database (e.g., production vs. development) so that one service can run locally with dev hosts
-    // but connect to production tables used by production services.
-    const databaseInfo = config["databases"][name][ServerConfig.dbEnvName];
-
-    const databaseConfig = Object.assign(databaseInfo, hostInfo);
+    const databaseConfig = config[name][ServerConfig.envName];
 
     let db: ISequelizeDatabase<T> = {
         connection: null,
@@ -136,6 +148,28 @@ function createConnection<T>(name: string, models: T) {
     db.connection = new Sequelize(databaseConfig.database, databaseConfig.username, databaseConfig.password, databaseConfig);
 
     return loadModels(db, __dirname + "/" + name);
+}
+
+function establishInfluxConnection() {
+    return new Influx.InfluxDB({
+        host: config.host,
+        port: config.port,
+        database: "query_metrics_db",
+        schema: [
+            {
+                measurement: "query_response_times",
+                fields: {
+                    queryObject: Influx.FieldType.STRING,
+                    querySql: Influx.FieldType.STRING,
+                    errors: Influx.FieldType.STRING,
+                    duration: Influx.FieldType.INTEGER
+                },
+                tags: [
+                    "user"
+                ]
+            }
+        ]
+    });
 }
 
 const _manager: PersistentStorageManager = new PersistentStorageManager();
