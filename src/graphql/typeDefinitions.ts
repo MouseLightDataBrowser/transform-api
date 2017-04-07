@@ -51,6 +51,7 @@ type RegistrationTransform {
 type Neuron {
     id: String!
     idNumber: Int
+    idString: String
     tag: String
     keywords: String
     createdAt: Float

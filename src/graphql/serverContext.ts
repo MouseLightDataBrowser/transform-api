@@ -319,7 +319,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getUntransformedSwc(): Promise<ISwcTracing[]> {
-        const obj = await this._storageManager.Tracings.findAll({attributes: ["swcTracingId"]});
+        const obj = await this._storageManager.Tracings.findAll({attributes: ["swcTracingId"], where: {transformedAt: {$ne: null}}});
 
         if (obj.length === 0) {
             return this._storageManager.SwcTracings.findAll({});

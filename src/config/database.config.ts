@@ -86,18 +86,21 @@ export = {
             "logging": null
         }
     },
-    "influx": {
+    "metrics": {
         "development": {
             "host": "localhost",
-            "port": "8086"
+            "port": "8086",
+            "database": "query_metrics_db"
         },
         "test": {
             "host": "metrics-db",
-            "port": "8086"
+            "port": "8086",
+            "database": "query_metrics_db"
         },
         "production": {
             "host": "metrics-db",
-            "port": "8086"
+            "port": "8086",
+            "database": "query_metrics_db"
         }
     }
 }

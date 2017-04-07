@@ -1,6 +1,7 @@
 export interface INeuron {
     id: string;
     idNumber: number;
+    idString: string;
     tag: string;
     keywords: string;
     x: number;
@@ -22,6 +23,10 @@ export function sequelizeImport(sequelize, DataTypes) {
         idNumber: {
             type: DataTypes.INTEGER,
             defaultValue: -1
+        },
+        idString: {
+            type: DataTypes.TEXT,
+            defaultValue: ""
         },
         tag: {
             type: DataTypes.TEXT,

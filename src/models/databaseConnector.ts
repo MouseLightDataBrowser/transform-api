@@ -151,10 +151,12 @@ function createConnection<T>(name: string, models: T) {
 }
 
 function establishInfluxConnection() {
+    const databaseConfig = config["metrics"][ServerConfig.envName];
+
     return new Influx.InfluxDB({
-        host: config.host,
-        port: config.port,
-        database: "query_metrics_db",
+        host: databaseConfig.host,
+        port: databaseConfig.port,
+        database: databaseConfig.database,
         schema: [
             {
                 measurement: "query_response_times",
