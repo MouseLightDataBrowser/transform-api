@@ -128,6 +128,14 @@ type NodePage {
     nodes: [Node]
 }
 
+type TracingPage {
+    offset: Int
+    limit: Int
+    totalCount: Int
+    matchCount: Int
+    tracings: [Tracing!]!
+}
+
 type TransformStatus {
     startedAt: Float
     inputNodeCount: Int
@@ -150,11 +158,28 @@ type BrainCompartmentContent {
     endCount: Int
 }
 
+type Error {
+    message: String
+    name: String
+}
+
+type DeleteTracingOutput {
+    error: Error
+}
+
+input TracingsQueryInput {
+    offset: Int
+    limit: Int
+    swcTracingIds: [String!]
+    tracingStructureId: String
+}
+
 input PageInput {
     tracingId: String
     offset: Int
     limit: Int
 }
+
 input FilterInput {
     tracingStructureId: String
     nodeStructureIds: [String!]
@@ -172,7 +197,7 @@ type Query {
     tracingStructures: [TracingStructure!]!
     swcTracings: [SwcTracing!]!
     swcTracing(id: String): SwcTracing!
-    tracings(structureId: String): [Tracing!]!
+    tracings(queryInput: TracingsQueryInput): TracingPage!
     tracing(id: String): Tracing!
     tracingsPage(filters: [FilterInput!]): [BrainCompartmentContent!]!
     tracingNodePage(page: PageInput): NodePage
@@ -184,6 +209,7 @@ type Query {
 type Mutation {
    applyTransform(swcId: String!): TransformMutationResult
    reapplyTransform(id: String!): TransformMutationResult
+   deleteTracings(tracingIds: [String!]): [DeleteTracingOutput!]
 }
 
 type Subscription {

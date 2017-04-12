@@ -1,4 +1,4 @@
-import {IGraphQLServerContext} from "./serverContext";
+import {IDeleteTracingOutput, IGraphQLServerContext, ITracingPage, ITracingsQueryInput} from "./serverContext";
 
 const debug = require("debug")("ndb:transform:resolvers");
 
@@ -8,7 +8,7 @@ import {ITracingNode, INodePage} from "../models/transform/tracingNode";
 import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {IBrainArea} from "../models/sample/brainArea";
-import {TransformManager, ITransformProgress, ITransformResult} from "../transform/transformWorker";
+import {TransformManager, ITransformProgress, ITransformResult} from "../transform/transformManager";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IStructureIdentifier} from "../models/swc/structureIdentifier";
 import {IPageInput} from "./interfaces/page";
@@ -20,14 +20,13 @@ interface IIdOnlyArguments {
     id: string;
 }
 
+interface ITracingIdsArguments {
+    tracingIds: string[];
+}
+
 interface ITransformArguments {
     swcId: string;
 }
-
-interface ITracingsArguments {
-    structureId: string;
-}
-
 
 interface INodePageArguments {
     page: IPageInput;
@@ -52,6 +51,10 @@ interface ITracingNodePage2Arguments {
     filters: IFilterInput[];
 }
 
+interface ITracingsArguments {
+    queryInput: ITracingsQueryInput;
+}
+
 const resolvers = {
     Query: {
         queryOperators(_, __, ___): IQueryOperator[] {
@@ -72,8 +75,8 @@ const resolvers = {
         swcTracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ISwcTracing> {
             return context.getSwcTracing(args.id);
         },
-        tracings(_, args: ITracingsArguments, context: IGraphQLServerContext): Promise<ITracing[]> {
-            return context.getTracings(args.structureId);
+        tracings(_, args: ITracingsArguments, context: IGraphQLServerContext): Promise<ITracingPage> {
+            return context.getTracings(args.queryInput);
         },
         tracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
             return context.getTracing(args.id);
@@ -100,11 +103,45 @@ const resolvers = {
         },
         reapplyTransform(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITransformResult> {
             return context.reapplyTransform(args.id);
+        },
+        deleteTracings(_, args: ITracingIdsArguments, context: IGraphQLServerContext): Promise<IDeleteTracingOutput[]> {
+            return context.deleteTracings(args.tracingIds);
         }
     },
     Subscription: {
         transformApplied(payload: ISwcTracing): ISwcTracing {
             return payload;
+        }
+    },
+    Tracing: {
+        swcTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<ISwcTracing> {
+            return context.getSwcTracing(tracing.swcTracingId);
+        },
+        registrationTransform(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IRegistrationTransform> {
+            return context.getRegistrationTransform(tracing.registrationTransformId);
+        },
+        tracingStructure(tracing, _, context: IGraphQLServerContext): Promise<ITracingStructure> {
+            return context.getTracingStructure(tracing);
+        },
+        nodeCount(tracing, _, context: IGraphQLServerContext): Promise<number> {
+            return context.getNodeCount(tracing);
+        },
+        firstNode(tracing, _, context: IGraphQLServerContext): Promise<ITracingNode> {
+            return context.getFirstTracingNode(tracing);
+        },
+        transformStatus(tracing, _, __): ITransformProgress {
+            return TransformManager.Instance().statusForTracing(tracing);
+        },
+    },
+    Node: {
+        swcNode(node, _, context: IGraphQLServerContext): Promise<ISwcNode> {
+            return context.getNodeSwcNode(node);
+        },
+        structureIdentifier(node, _, context: IGraphQLServerContext): Promise<IStructureIdentifier> {
+            return context.getNodeStructureIdentifier(node);
+        },
+        brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
+            return context.getNodeBrainArea(node);
         }
     },
     SwcTracing: {
@@ -124,37 +161,6 @@ const resolvers = {
     SwcNode: {
         structureIdentifier(node, _, context: IGraphQLServerContext): Promise<IStructureIdentifier> {
             return context.getSwcNodeStructureIdentifier(node);
-        }
-    },
-    Tracing: {
-        swcTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<ISwcTracing> {
-            return context.getSwcTracing(tracing.swcTracingId);
-        },
-        registrationTransform(tracing: ITracing, _, context: IGraphQLServerContext): Promise<IRegistrationTransform> {
-            return context.getRegistrationTransform(tracing.registrationTransformId);
-        },
-        tracingStructure(tracing, _, context: IGraphQLServerContext): Promise<ITracingStructure> {
-            return context.getTracingStructure(tracing);
-        },
-        nodeCount(tracing, _, context: IGraphQLServerContext): Promise<number> {
-            return context.getNodeCount(tracing);
-        },
-        firstNode(tracing, _, context: IGraphQLServerContext): Promise<ITracingNode> {
-            return context.getFirstTracingNode(tracing);
-        },
-        transformStatus(tracing, _, context: IGraphQLServerContext): ITransformProgress {
-            return TransformManager.Instance().statusForTracing(tracing);
-        },
-    },
-    Node: {
-        swcNode(node, _, context: IGraphQLServerContext): Promise<ISwcNode> {
-            return context.getNodeSwcNode(node);
-        },
-        structureIdentifier(node, _, context: IGraphQLServerContext): Promise<IStructureIdentifier> {
-            return context.getNodeStructureIdentifier(node);
-        },
-        brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
-            return context.getNodeBrainArea(node);
         }
     },
     BrainCompartmentContent: {

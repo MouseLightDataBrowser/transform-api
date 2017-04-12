@@ -15,6 +15,7 @@ export function sequelizeImport(sequelize, DataTypes) {
             type: DataTypes.TEXT,
             defaultValue: ""
         },
+        animalId: DataTypes.TEXT,
         comment: {
             type: DataTypes.TEXT,
             defaultValue: ""

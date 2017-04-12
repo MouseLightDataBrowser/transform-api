@@ -5,7 +5,7 @@ export interface ITracing {
     id: string;
     swcTracingId: string;
     registrationTransformId: string;
-    tracingStructureId: string;
+    // tracingStructureId: string;
     nodeCount: number;
     pathCount: number;
     branchCount: number;
@@ -49,7 +49,7 @@ export function sequelizeImport(sequelize, DataTypes) {
     });
 
     Tracing.findForSwcTracing = async(swcTracing: ISwcTracing, registration) => {
-        const result = await Tracing.findOrCreate({where: {swcTracingId: swcTracing.id, registrationTransformId: registration.id, tracingStructureId: swcTracing.tracingStructureId}});
+        const result = await Tracing.findOrCreate({where: {swcTracingId: swcTracing.id, registrationTransformId: registration.id/*, tracingStructureId: swcTracing.tracingStructureId*/}});
 
         return (result && result.length > 0) ? result[0] : null;
     };

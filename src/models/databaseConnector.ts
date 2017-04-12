@@ -44,6 +44,10 @@ export class PersistentStorageManager {
         return _manager;
     }
 
+    public get TransformConnection() {
+        return this.transformDatabase.connection;
+    }
+
     public get BrainAreas() {
         return this.sampleDatabase.models.BrainArea;
     }

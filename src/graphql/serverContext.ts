@@ -12,7 +12,7 @@ import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {ITracingNode, INodePage} from "../models/transform/tracingNode";
 import {IBrainArea} from "../models/sample/brainArea";
-import {ITransformResult, TransformManager} from "../transform/transformWorker";
+import {ITransformResult, TransformManager} from "../transform/transformManager";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
 import {IPageInput} from "./interfaces/page";
@@ -20,6 +20,25 @@ import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 import {INeuron} from "../models/sample/neuron";
 
 export const pubSub = new PubSub();
+
+export interface ITracingsQueryInput {
+    offset: number;
+    limit: number;
+    swcTracingIds: string[];
+    tracingStructureId: string;
+}
+
+export interface ITracingPage {
+    offset: number;
+    limit: number;
+    totalCount: number;
+    matchCount: number;
+    tracings: ITracing[];
+}
+
+export interface IDeleteTracingOutput {
+    error: Error;
+}
 
 export interface IGraphQLServerContext {
     getBrainAreas(): Promise<IBrainArea[]>;
@@ -36,7 +55,7 @@ export interface IGraphQLServerContext {
     getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier>;
     getNeuron(id: string): Promise<INeuron>;
 
-    getTracings(structureId: string): Promise<ITracing[]>;
+    getTracings(queryInput: ITracingsQueryInput): Promise<ITracingPage>;
     getTracing(id: string): Promise<ITracing>;
     getTracingsWithFilters(filters: IFilterInput[]): Promise<IBrainCompartment[]>;
     getNodeCount(tracing: ITracing): Promise<number>;
@@ -57,18 +76,11 @@ export interface IGraphQLServerContext {
 
     applyTransform(swcTracingId: string): Promise<ITransformResult>;
     reapplyTransform(tracingId: string): Promise<ITransformResult>;
+    deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]>;
 }
 
 export class GraphQLServerContext implements IGraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
-
-    public async getBrainAreas(): Promise<IBrainArea[]> {
-        return this._storageManager.BrainAreas.findAll({});
-    }
-
-    public async getBrainArea(id: string): Promise<IBrainArea> {
-        return this._storageManager.BrainAreas.findOne({where: {id: id}});
-    }
 
     public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
         return this._storageManager.StructureIdentifiers.findAll({});
@@ -78,14 +90,20 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.TracingStructures.findAll({});
     }
 
+    public async getBrainAreas(): Promise<IBrainArea[]> {
+        return this._storageManager.BrainAreas.findAll({});
+    }
+
+    public async getBrainArea(id: string): Promise<IBrainArea> {
+        return this._storageManager.BrainAreas.findById(id);
+    }
+
     public async getSwcTracings(): Promise<ISwcTracing[]> {
         return this._storageManager.SwcTracings.findAll({});
     }
 
     public async getSwcTracing(id: string): Promise<ISwcTracing> {
-        const result = await this._storageManager.SwcTracings.findAll({where: {id: id}});
-
-        return (result && result.length > 0) ? result[0] : null;
+        return this._storageManager.SwcTracings.findById(id);
     }
 
     public async getSwcNodeCount(tracing: ISwcTracing): Promise<number> {
@@ -105,27 +123,79 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNeuron(id: string): Promise<INeuron> {
-        return this._storageManager.Neurons.findOne({where: {id: id}});
+        return this._storageManager.Neurons.findById(id);
     }
 
     public async getRegistrationTransform(id: string): Promise<IRegistrationTransform> {
-        const result = await this._storageManager.RegistrationTransforms.findAll({where: {id: id}});
-
-        return (result && result.length > 0) ? result[0] : null;
+        return this._storageManager.RegistrationTransforms.findById(id);
     }
 
-    public async getTracings(structureId: string): Promise<ITracing[]> {
-        if (!structureId) {
-            return this._storageManager.Tracings.findAll({});
+    public async getTracings(queryInput: ITracingsQueryInput): Promise<ITracingPage> {
+        let out: ITracingPage = {
+            offset: 0,
+            limit: 0,
+            totalCount: 0,
+            matchCount: 0,
+            tracings: []
+        };
+
+        out.totalCount = await this._storageManager.Tracings.count({});
+
+        let options = {where: {}};
+
+        if (queryInput) {
+            let swcStructureMatchIds = [];
+
+            if (queryInput.tracingStructureId) {
+                // options.where["tracingStructureId"] = queryInput.tracingStructureId;
+                swcStructureMatchIds = (await this._storageManager.SwcTracings.findAll({
+                    attributes: ["id"],
+                    where: {tracingStructureId: queryInput.tracingStructureId}
+                })).map(s => s.id);
+            }
+
+            if (queryInput.swcTracingIds && queryInput.swcTracingIds.length > 0) {
+                let swcSearchIds = queryInput.swcTracingIds;
+
+                if (swcStructureMatchIds.length > 0) {
+                    swcStructureMatchIds = swcStructureMatchIds.filter(s => swcSearchIds.indexOf(s) > -1);
+                } else {
+                    swcStructureMatchIds = swcSearchIds;
+                }
+            }
+
+            if (swcStructureMatchIds.length > 0) {
+                options.where["swcTracingId"] = {$in: swcStructureMatchIds};
+            }
+
+            out.matchCount = await this._storageManager.Tracings.count(options);
+
+            options["order"] = [["createdAt", "DESC"]];
+
+            if (queryInput.offset) {
+                options["offset"] = queryInput.offset;
+                out.offset = queryInput.offset;
+            }
+
+            if (queryInput.limit) {
+                options["limit"] = queryInput.limit;
+                out.limit = queryInput.limit;
+            }
         } else {
-            return this._storageManager.Tracings.findAll({where: {tracingStructureId: structureId}});
+            out.matchCount = out.totalCount;
         }
+
+        if (out.limit === 1) {
+            out.tracings = await this._storageManager.Tracings.findOne(options);
+        } else {
+            out.tracings = await this._storageManager.Tracings.findAll(options);
+        }
+
+        return out;
     }
 
     public async getTracing(id: string): Promise<ITracing> {
-        const result = await this._storageManager.Tracings.findAll({where: {id: id}});
-
-        return (result && result.length > 0) ? result[0] : null;
+        return this._storageManager.Tracings.findById(id);
     }
 
     public async getTracingsWithFilters(filters: IFilterInput[]): Promise<IBrainCompartment[]> {
@@ -139,10 +209,15 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
         try {
             const promises = filters.map(async (filter) => {
+                const swcStructureMatchIds = (await this._storageManager.SwcTracings.findAll({
+                    attributes: ["id"],
+                    where: {tracingStructureId: filter.tracingStructureId}
+                })).map(s => s.id);
+
                 let query = {
                     include: [{
                         model: this._storageManager.Tracings,
-                        where: {tracingStructureId: filter.tracingStructureId}
+                        where: {swcTracingId: {$in: swcStructureMatchIds}}
                     }],
                     where: {}
                 };
@@ -223,7 +298,9 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getTracingStructure(tracing: ITracing): Promise<ITracingStructure> {
-        return await this._storageManager.TracingStructures.findOne({where: {id: tracing.tracingStructureId}});
+        const swcTracing = await this._storageManager.SwcTracings.findOne({where: {id: tracing.swcTracingId}});
+
+        return await this._storageManager.TracingStructures.findOne({where: {id: swcTracing.tracingStructureId}});
     }
 
     public async getNodeCount(tracing: ITracing): Promise<number> {
@@ -319,7 +396,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getUntransformedSwc(): Promise<ISwcTracing[]> {
-        const obj = await this._storageManager.Tracings.findAll({attributes: ["swcTracingId"], where: {transformedAt: {$ne: null}}});
+        const obj = await this._storageManager.Tracings.findAll({
+            attributes: ["swcTracingId"],
+            where: {transformedAt: {$ne: null}}
+        });
 
         if (obj.length === 0) {
             return this._storageManager.SwcTracings.findAll({});
@@ -334,5 +414,31 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 }
             }
         });
+    }
+
+    public async deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]> {
+        return Promise.all(ids.map(async (id) => {
+            let tracing = await
+                this._storageManager.Tracings.findById(id);
+
+            if (!tracing) {
+                return {error: {name: "DoesNotExistError", message: "A tracing with that id does not exist"}};
+            }
+
+            try {
+                await this._storageManager.TransformConnection.transaction(async (t) => {
+                    await this._storageManager.BrainCompartment.destroy({where: {tracingId: id}, transaction: t});
+
+                    await this._storageManager.Nodes.destroy({where: {tracingId: id}, transaction: t});
+
+                    await this._storageManager.Tracings.destroy({where: {id: id}, transaction: t});
+                });
+            } catch (err) {
+                debug(err);
+                return {error: {name: err.name, message: err.message}};
+            }
+
+            return {error: null};
+        }));
     }
 }
