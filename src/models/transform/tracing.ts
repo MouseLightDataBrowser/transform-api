@@ -31,7 +31,6 @@ export function sequelizeImport(sequelize, DataTypes) {
         swcTracingId: DataTypes.UUID,
         // reference to registration transform from sample database
         registrationTransformId: DataTypes.UUID,
-        tracingStructureId: DataTypes.UUID,
         nodeCount: DataTypes.INTEGER,
         pathCount: DataTypes.INTEGER,
         branchCount: DataTypes.INTEGER,
