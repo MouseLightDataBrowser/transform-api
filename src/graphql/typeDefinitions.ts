@@ -181,7 +181,7 @@ input PageInput {
 }
 
 input FilterInput {
-    tracingStructureId: String
+    tracingStructureIds: [String!]
     nodeStructureIds: [String!]
     operatorId: String
     amount: Float

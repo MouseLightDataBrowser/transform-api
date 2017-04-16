@@ -22,7 +22,7 @@
     "influx": "^5.0.6",
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
-    "subscriptions-transport-ws": "^0.5.5-alpha.0",
+    "subscriptions-transport-ws": "^0.5.5",
     "uuid": "^3.0.1",
     "webworker-threads": "^0.7.11"
   },

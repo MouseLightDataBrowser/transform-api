@@ -1,6 +1,7 @@
 import {operatorIdValueMap} from "../models/search/queryOperator";
 const unique = require("array-unique");
 import {PubSub} from "graphql-subscriptions";
+import {FindOptions, IncludeOptions} from "sequelize";
 
 import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 const debug = require("debug")("ndb:transform:context");
@@ -209,18 +210,27 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
         try {
             const promises = filters.map(async (filter) => {
-                const swcStructureMatchIds = (await this._storageManager.SwcTracings.findAll({
-                    attributes: ["id"],
-                    where: {tracingStructureId: filter.tracingStructureId}
-                })).map(s => s.id);
+                let query: FindOptions = {
+                    where: {},
+                    include: null
+                };
 
-                let query = {
-                    include: [{
+                let swcStructureMatchIds = [];
+
+                // Zero means any, two is explicitly both types - either way, do not need to filter on structure id
+                if (filter.tracingStructureIds.length === 1) {
+                    swcStructureMatchIds = (await this._storageManager.SwcTracings.findAll({
+                        attributes: ["id"],
+                        where: {tracingStructureId: filter.tracingStructureIds[0]}
+                    })).map(s => s.id);
+                }
+
+                if (swcStructureMatchIds.length > 0) {
+                    query.include = [{
                         model: this._storageManager.Tracings,
                         where: {swcTracingId: {$in: swcStructureMatchIds}}
-                    }],
-                    where: {}
-                };
+                    }];
+                }
 
                 if (filter.brainAreaIds.length > 0) {
                     query.where["brainAreaId"] = {
@@ -275,12 +285,26 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 results = await this._storageManager.BrainCompartment.findAll(queries[0]);
                 // const ids = idList.map(obj => obj.tracingId);
                 // return this._storageManager.Tracings.findAll({where: {id: {$in: ids}}});
-                queries[0].include[0].model = "Tracings";
+
+                const duration = Date.now() - start;
+
+                // Fixes json -> string for model circular reference when logging.
+                const queryLogs = queries.map(q => {
+                    let ql = {where: q.where};
+                    if (q.include) {
+                        const include: IncludeOptions = q.include[0];
+
+                        ql["include"] = [{
+                            model: "Tracings",
+                            where: include.where
+                        }];
+                    }
+                    return ql;
+                });
+
+                await this._storageManager.logQuery(filters, queryLogs, "", duration);
             }
 
-            const duration = Date.now() - start;
-
-            await this._storageManager.logQuery(filters, queries, "", duration);
 
             return results;
 
@@ -304,7 +328,9 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNodeCount(tracing: ITracing): Promise<number> {
-        if (!tracing) {
+        if (!
+                tracing
+        ) {
             return 0;
         }
 
@@ -321,7 +347,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.Nodes.getNodePage(page);
     }
 
-    public async getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage> {
+    public async    getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage> {
         console.log(filters);
 
         if (!filters || filters.length === 0) {

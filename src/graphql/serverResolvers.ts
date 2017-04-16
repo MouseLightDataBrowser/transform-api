@@ -33,7 +33,7 @@ interface INodePageArguments {
 }
 
 export interface IFilterInput {
-    tracingStructureId: string;
+    tracingStructureIds: string[];
     nodeStructureIds: string[];
     operatorId: string;
     amount: number;
