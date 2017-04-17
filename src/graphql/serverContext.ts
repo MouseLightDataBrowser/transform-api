@@ -3,7 +3,7 @@ const unique = require("array-unique");
 import {PubSub} from "graphql-subscriptions";
 import {FindOptions, IncludeOptions} from "sequelize";
 
-import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
+import {IStructureIdentifier} from "../models/swc/structureIdentifier";
 const debug = require("debug")("ndb:transform:context");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
@@ -233,8 +233,20 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 }
 
                 if (filter.brainAreaIds.length > 0) {
+                    // Structure paths of the selected brain areas.
+                    const brainStructurePaths = (await this._storageManager.BrainAreas.findAll({
+                        attributes: ["structureIdPath"],
+                        where: {id: {$in: filter.brainAreaIds}}
+                    })).map(o => o.structureIdPath + "%");
+
+                    // Find all brain areas that are these or children of in terms of structure path.
+                    const comprehensiveBrainAreaIds = (await this._storageManager.BrainAreas.findAll({
+                        attributes: ["id"],
+                        where: {structureIdPath: {$like: {$any: brainStructurePaths}}}
+                    })).map(o => o.id);
+
                     query.where["brainAreaId"] = {
-                        $in: filter.brainAreaIds
+                        $in: comprehensiveBrainAreaIds
                     }
                 }
                 if (filter.operatorId && filter.operatorId.length > 0) {
@@ -268,8 +280,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                                 query.where[columnName] = createOperator(opCode, filter.amount);
                             }
                         } else {
-                            const columnName = this._storageManager.StructureIdentifiers.countColumnName(StructureIdentifiers.undefined);
-                            query.where[columnName] = createOperator(opCode, filter.amount);
+                            query.where["nodeCount"] = createOperator(opCode, filter.amount);
                         }
                     }
                 }
@@ -310,6 +321,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
         } catch (err) {
             const duration = Date.now() - start;
+
+            console.log(err);
 
             await this._storageManager.logQuery(filters, "", err, duration);
 
