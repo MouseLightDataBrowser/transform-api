@@ -96,6 +96,7 @@ type Tracing {
     swcTracing: SwcTracing  
     registrationTransform: RegistrationTransform
     tracingStructure: TracingStructure
+    nodes(brainAreaIds: [String!]): [Node!]!
     nodeCount: Int
     pathCount: Int
     branchCount: Int
@@ -115,6 +116,7 @@ type Node {
     lengthToParent: Float
     brainArea: BrainArea
     structureIdentifier: StructureIdentifier
+    structureIdValue: Int
     swcNode: SwcNode
     createdAt: Float
     updatedAt: Float
@@ -170,6 +172,7 @@ type DeleteTracingOutput {
 input TracingsQueryInput {
     offset: Int
     limit: Int
+    tracingIds: [String!]
     swcTracingIds: [String!]
     tracingStructureId: String
 }

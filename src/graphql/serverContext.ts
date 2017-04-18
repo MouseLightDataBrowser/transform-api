@@ -25,6 +25,7 @@ export const pubSub = new PubSub();
 export interface ITracingsQueryInput {
     offset: number;
     limit: number;
+    tracingIds: string[];
     swcTracingIds: string[];
     tracingStructureId: string;
 }
@@ -45,6 +46,7 @@ export interface IGraphQLServerContext {
     getBrainAreas(): Promise<IBrainArea[]>;
     getBrainArea(id: string): Promise<IBrainArea>;
     getStructureIdentifiers(): Promise<IStructureIdentifier[]>;
+    getStructureIdValue(id: string): number;
 
     getTracingStructures(): Promise<ITracingStructure[]>;
 
@@ -61,6 +63,7 @@ export interface IGraphQLServerContext {
     getTracingsWithFilters(filters: IFilterInput[]): Promise<IBrainCompartment[]>;
     getNodeCount(tracing: ITracing): Promise<number>;
     getFirstTracingNode(tracing: ITracing): Promise<ITracingNode>;
+    getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
     getNodePage(page: IPageInput): Promise<INodePage>;
     getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage>;
     getTracingStructure(tracing: ITracing): Promise<ITracingStructure>;
@@ -85,6 +88,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
         return this._storageManager.StructureIdentifiers.findAll({});
+    }
+
+    public getStructureIdValue(id: string): number {
+        return this._storageManager.StructureIdentifiers.idValue(id);
     }
 
     public async getTracingStructures(): Promise<ITracingStructure[]> {
@@ -167,6 +174,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             if (swcStructureMatchIds.length > 0) {
                 options.where["swcTracingId"] = {$in: swcStructureMatchIds};
+            }
+
+            if (queryInput.tracingIds && queryInput.tracingIds.length > 0) {
+                options.where["id"] = {$in: queryInput.tracingIds};
             }
 
             out.matchCount = await this._storageManager.Tracings.count(options);
@@ -316,7 +327,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 await this._storageManager.logQuery(filters, queryLogs, "", duration);
             }
 
-
             return results;
 
         } catch (err) {
@@ -341,9 +351,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNodeCount(tracing: ITracing): Promise<number> {
-        if (!
-                tracing
-        ) {
+        if (!tracing) {
             return 0;
         }
 
@@ -356,11 +364,19 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return result;
     }
 
+    public async getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]> {
+        if (!tracing || !tracing.id) {
+            return [];
+        }
+
+        return this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
+    }
+
     public async getNodePage(page: IPageInput): Promise<INodePage> {
         return this._storageManager.Nodes.getNodePage(page);
     }
 
-    public async    getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage> {
+    public async getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage> {
         console.log(filters);
 
         if (!filters || filters.length === 0) {

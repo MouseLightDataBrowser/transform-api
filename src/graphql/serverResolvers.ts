@@ -32,6 +32,10 @@ interface INodePageArguments {
     page: IPageInput;
 }
 
+interface ITracingNodesArguments {
+    brainAreaIds: string[];
+}
+
 export interface IFilterInput {
     tracingStructureIds: string[];
     nodeStructureIds: string[];
@@ -129,9 +133,12 @@ const resolvers = {
         firstNode(tracing, _, context: IGraphQLServerContext): Promise<ITracingNode> {
             return context.getFirstTracingNode(tracing);
         },
+        nodes(tracing: ITracing, args: ITracingNodesArguments, context: IGraphQLServerContext): Promise<ITracingNode[]> {
+            return context.getNodes(tracing, args.brainAreaIds);
+        },
         transformStatus(tracing, _, __): ITransformProgress {
             return TransformManager.Instance().statusForTracing(tracing);
-        },
+        }
     },
     Node: {
         swcNode(node, _, context: IGraphQLServerContext): Promise<ISwcNode> {
@@ -139,6 +146,9 @@ const resolvers = {
         },
         structureIdentifier(node, _, context: IGraphQLServerContext): Promise<IStructureIdentifier> {
             return context.getNodeStructureIdentifier(node);
+        },
+        structureIdValue(node: ITracingNode, _, context: IGraphQLServerContext): number {
+            return context.getStructureIdValue(node.structureIdentifierId);
         },
         brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
             return context.getNodeBrainArea(node);
