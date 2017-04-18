@@ -160,6 +160,18 @@ type BrainCompartmentContent {
     endCount: Int
 }
 
+type TracingCompartmentsOutput {
+    tracing: Tracing
+    compartments: [BrainCompartmentContent!]
+}
+
+type TracingQueryPage {
+    tracings: [TracingCompartmentsOutput!]!
+    totalCount: Int
+    queryTime: Int
+    error: Error
+}
+    
 type Error {
     message: String
     name: String
@@ -204,7 +216,7 @@ type Query {
     swcTracing(id: String): SwcTracing!
     tracings(queryInput: TracingsQueryInput): TracingPage!
     tracing(id: String): Tracing!
-    tracingsPage(filters: [FilterInput!]): [BrainCompartmentContent!]!
+    tracingsPage(filters: [FilterInput!]): TracingQueryPage
     tracingNodePage(page: PageInput): NodePage
     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
     brainCompartmentContents: [BrainCompartmentContent!]!

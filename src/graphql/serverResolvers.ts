@@ -1,4 +1,7 @@
-import {IDeleteTracingOutput, IGraphQLServerContext, ITracingPage, ITracingsQueryInput} from "./serverContext";
+import {
+    IDeleteTracingOutput, IGraphQLServerContext, ITracingCompartmentOutput, ITracingPage, ITracingQueryPage,
+    ITracingsQueryInput
+} from "./serverContext";
 
 const debug = require("debug")("ndb:transform:resolvers");
 
@@ -85,7 +88,7 @@ const resolvers = {
         tracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
             return context.getTracing(args.id);
         },
-        tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<IBrainCompartment[]> {
+        tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<ITracingQueryPage> {
             return context.getTracingsWithFilters(args.filters);
         },
         tracingNodePage(_, args: INodePageArguments, context: IGraphQLServerContext): Promise<INodePage> {

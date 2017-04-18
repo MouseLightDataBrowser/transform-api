@@ -43,6 +43,18 @@ export interface IDeleteTracingOutput {
     error: Error;
 }
 
+export interface ITracingCompartmentOutput {
+    tracing: ITracingNode;
+    compartments: IBrainCompartment[];
+}
+
+export interface ITracingQueryPage {
+    tracings: ITracingCompartmentOutput[];
+    totalCount: number;
+    queryTime: number;
+    error: Error;
+}
+
 export enum FilterComposition {
     none = 0,
     and = 1,
@@ -67,7 +79,7 @@ export interface IGraphQLServerContext {
 
     getTracings(queryInput: ITracingsQueryInput): Promise<ITracingPage>;
     getTracing(id: string): Promise<ITracing>;
-    getTracingsWithFilters(filters: IFilterInput[]): Promise<IBrainCompartment[]>;
+    getTracingsWithFilters(filters: IFilterInput[]): Promise<ITracingQueryPage>;
     getNodeCount(tracing: ITracing): Promise<number>;
     getFirstTracingNode(tracing: ITracing): Promise<ITracingNode>;
     getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
@@ -217,7 +229,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.Tracings.findById(id);
     }
 
-    public async getTracingsWithFilters(filters: IFilterInput[]): Promise<IBrainCompartment[]> {
+    public async getTracingsWithFilters(filters: IFilterInput[]): Promise<ITracingQueryPage> {
         const createOperator = (operator: string, amount: number) => {
             let obj = {};
             obj[operator] = amount;
@@ -227,10 +239,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         const start = Date.now();
 
         try {
-            const promises = filters.map(async (filter, index) => {
+            const promises = filters.map(async (filter) => {
                 let query: FindOptions = {
                     where: {},
-                    include: null
+                    include: [this._storageManager.Tracings]
                 };
 
                 let swcStructureMatchIds = [];
@@ -267,40 +279,52 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                         $in: comprehensiveBrainAreaIds
                     }
                 }
+
+                let opCode = null;
+                let amount = 0;
+
                 if (filter.operatorId && filter.operatorId.length > 0) {
                     const operator = operatorIdValueMap().get(filter.operatorId);
-
                     if (operator) {
-                        const opCode = operator.operator;
+                        opCode = operator.operator;
+                    }
+                    amount = filter.amount;
+                } else {
+                    opCode = "$gt";
+                    amount = 0;
+                }
 
-                        if (filter.nodeStructureIds.length > 1) {
-                            let subQ = filter.nodeStructureIds.map(s => {
-                                const columnName = this._storageManager.StructureIdentifiers.countColumnName(s);
-
-                                if (columnName) {
-                                    let obj = {};
-
-                                    obj[columnName] = createOperator(opCode, filter.amount);
-
-                                    return obj;
-                                }
-
-                                return null;
-                            }).filter(q => q !== null);
-
-                            if (subQ.length > 0) {
-                                query.where["$or"] = subQ;
-                            }
-                        } else if (filter.nodeStructureIds.length > 0) {
-                            const columnName = this._storageManager.StructureIdentifiers.countColumnName(filter.nodeStructureIds[0]);
+                if (opCode) {
+                    if (filter.nodeStructureIds.length > 1) {
+                        let subQ = filter.nodeStructureIds.map(s => {
+                            const columnName = this._storageManager.StructureIdentifiers.countColumnName(s);
 
                             if (columnName) {
-                                query.where[columnName] = createOperator(opCode, filter.amount);
+                                let obj = {};
+
+                                obj[columnName] = createOperator(opCode, amount);
+
+                                return obj;
                             }
-                        } else {
-                            query.where["nodeCount"] = createOperator(opCode, filter.amount);
+
+                            return null;
+                        }).filter(q => q !== null);
+
+                        if (subQ.length > 0) {
+                            query.where["$or"] = subQ;
                         }
+                    } else if (filter.nodeStructureIds.length > 0) {
+                        const columnName = this._storageManager.StructureIdentifiers.countColumnName(filter.nodeStructureIds[0]);
+
+                        if (columnName) {
+                            query.where[columnName] = createOperator(opCode, amount);
+                        }
+                    } else {
+                        query.where["nodeCount"] = createOperator(opCode, amount);
                     }
+                } else {
+                    // TODO return error
+                    console.log("failed to find operator");
                 }
 
                 return query;
@@ -316,7 +340,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             const results = await Promise.all(resultPromises);
 
-            const compartments = results.reduce((prev, curr, index) => {
+            let compartments = results.reduce((prev, curr, index) => {
                 if (index === 0) {
                     return curr;
                 }
@@ -333,9 +357,31 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                         return validIds.includes(a.tracingId);
                     })
                 } else {
-                    return unique(prev.concat(curr));
+                    return _.uniqBy(prev.concat(curr), "tracingId");
                 }
             }, []);
+
+            compartments = _.uniqBy(compartments, "id");
+
+            let tracingMap = new Map<string, ITracingCompartmentOutput>();
+
+            compartments.forEach(compartment => {
+                let item = tracingMap.get(compartment.Tracing.id);
+
+                if (!item) {
+                    item = {
+                        tracing: compartment.Tracing,
+                        compartments: []
+                    };
+                    tracingMap.set(compartment.Tracing.id, item);
+                }
+
+                item.compartments.push(compartment);
+            });
+
+            const output = Array.from(tracingMap.values());
+
+            const totalCount = await this._storageManager.Tracings.count({});
 
             const duration = Date.now() - start;
 
@@ -357,7 +403,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             await this._storageManager.logQuery(filters, queryLogs, "", duration);
 
-            return unique(compartments);
+            return {tracings: output, queryTime: duration, totalCount, error: null};
 
         } catch (err) {
             const duration = Date.now() - start;
@@ -366,7 +412,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             await this._storageManager.logQuery(filters, "", err, duration);
 
-            return [];
+            return {tracings: [], queryTime: duration, totalCount: 0, error: err};
         }
     }
 
