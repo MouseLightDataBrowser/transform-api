@@ -10,7 +10,6 @@
     "docker-push": "docker push mouselightdatabrowser/transform-api"
   },
   "dependencies": {
-    "array-intersection": "^0.1.2",
     "array-unique": "^0.3.2",
     "body-parser": "^1.16.1",
     "debug": "~2.6.0",
