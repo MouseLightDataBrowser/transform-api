@@ -175,6 +175,7 @@ input TracingsQueryInput {
     tracingIds: [String!]
     swcTracingIds: [String!]
     tracingStructureId: String
+    nonce: String
 }
 
 input PageInput {
@@ -191,6 +192,7 @@ input FilterInput {
     brainAreaIds: [String!]
     invert: Boolean
     composition: Int
+    nonce: String
 }
 
 type Query {
