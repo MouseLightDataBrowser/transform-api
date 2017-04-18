@@ -6,7 +6,7 @@ import * as uuid from "uuid";
 const debug = require("debug")("ndb:transform:node-worker");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
-import {ServerConfig} from "../config/server.config";
+import {serverConfiguration} from "../config/server.config";
 import {StructureIdentifiers} from "../models/swc/structureIdentifier";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 
@@ -73,7 +73,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
 
-        const brainAreaReferenceFile = new hdf5.File(ServerConfig.ontologyPath, Access.ACC_RDONLY);
+        const brainAreaReferenceFile = new hdf5.File(serverConfiguration.ontologyPath, Access.ACC_RDONLY);
 
         const brainTransformMatrix = brainAreaReferenceFile.getDatasetAttributes("OntologyAtlas")["Transformation_Matrix"];
 
@@ -82,8 +82,6 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
         const count = [3, 1, 1, 1];
 
         const dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
-            start: stride,
-            stride: stride,
             count: count
         });
 
@@ -92,8 +90,6 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
         debug(`transform extents (HDF5 order) ${transformExtents[0]} ${transformExtents[1]} ${transformExtents[2]} ${transformExtents[3]}`);
 
         const ba_dataset_ref = hdf5.openDataset(brainAreaReferenceFile.id, "OntologyAtlas", {
-            start: [1, 1, 1],
-            stride: [1, 1, 1],
             count: [1, 1, 1]
         });
 
@@ -114,7 +110,6 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
         };
 
         let nodes = swcNodes.map((swcNode, index) => {
-
             if (isFork) {
                 if (index % 100 === 0) {
                     process.send({tracing: tracingId, status: {outputNodeCount: index}});

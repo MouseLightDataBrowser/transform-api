@@ -5,7 +5,7 @@ const fork = require("child_process").fork;
 
 const debug = require("debug")("ndb:transform:transform-worker");
 
-import {ServerConfig} from "../config/server.config";
+import {serverConfiguration} from "../config/server.config";
 import {ITracing} from "../models/transform/tracing";
 import {ISwcTracing} from "../models/swc/tracing";
 
@@ -44,9 +44,9 @@ export class TransformManager {
             return {tracing: null, errors: [`transform file ${registrationTransform.location} does not exist`]};
         }
 
-        if (!fs.existsSync(ServerConfig.ontologyPath)) {
-            debug(`ontology file ${ServerConfig.ontologyPath} does not exist`);
-            return {tracing: null, errors: [`ontology file ${ServerConfig.ontologyPath} does not exist`]};
+        if (!fs.existsSync(serverConfiguration.ontologyPath)) {
+            debug(`ontology file ${serverConfiguration.ontologyPath} does not exist`);
+            return {tracing: null, errors: [`ontology file ${serverConfiguration.ontologyPath} does not exist`]};
         }
 
         if (this._inProgressMap.has(tracing.id)) {

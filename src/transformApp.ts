@@ -4,11 +4,11 @@ import * as bodyParser from "body-parser";
 
 const debug = require("debug")("ndb:transform:server");
 
-import {ServerConfig} from "./config/server.config";
+import {serverConfiguration} from "./config/server.config";
 
 import {graphQLMiddleware, graphiQLMiddleware, graphQLSubscriptions} from "./graphql/middleware/graphQLMiddleware";
 
-const PORT = process.env.API_PORT || ServerConfig.port;
+const PORT = process.env.API_PORT || serverConfiguration.port;
 
 const app = express();
 
@@ -16,13 +16,13 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(bodyParser.json());
 
-app.use(ServerConfig.graphQlEndpoint, graphQLMiddleware());
+app.use(serverConfiguration.graphQlEndpoint, graphQLMiddleware());
 
-app.use(ServerConfig.graphiQlEndpoint, graphiQLMiddleware(ServerConfig));
+app.use(["/", serverConfiguration.graphiQlEndpoint], graphiQLMiddleware(serverConfiguration));
 
 const server = createServer(app);
 
 server.listen(PORT, () => {
-    debug(`transform api server is now running with env ${ServerConfig.envName} on http://localhost:${PORT}`);
+    debug(`transform api server is now running with env ${serverConfiguration.envName} on http://localhost:${PORT}`);
     graphQLSubscriptions(server)
 });

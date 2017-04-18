@@ -51,4 +51,4 @@ function loadConfiguration() {
 }
 
 
-export const ServerConfig = loadConfiguration();
+export const serverConfiguration = loadConfiguration();

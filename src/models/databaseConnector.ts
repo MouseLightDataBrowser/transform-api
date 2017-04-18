@@ -5,7 +5,7 @@ const debug = require("debug")("ndb:transform:database-connector");
 
 const config = require("../config/database.config");
 
-import {ServerConfig} from "../config/server.config"
+import {serverConfiguration} from "../config/server.config"
 
 import {loadModels} from "./modelLoader";
 
@@ -139,7 +139,7 @@ async function authenticate(database, name) {
 
 function createConnection<T>(name: string, models: T) {
     // Pull the host information from the regular node env.  Local vs. docker container, etc.
-    const databaseConfig = config[name][ServerConfig.envName];
+    const databaseConfig = config[name][serverConfiguration.envName];
 
     let db: ISequelizeDatabase<T> = {
         connection: null,
@@ -155,7 +155,7 @@ function createConnection<T>(name: string, models: T) {
 }
 
 function establishInfluxConnection() {
-    const databaseConfig = config["metrics"][ServerConfig.envName];
+    const databaseConfig = config["metrics"][serverConfiguration.envName];
 
     return new Influx.InfluxDB({
         host: databaseConfig.host,
