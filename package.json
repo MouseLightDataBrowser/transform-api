@@ -10,6 +10,7 @@
     "docker-push": "docker push mouselightdatabrowser/transform-api"
   },
   "dependencies": {
+    "array-intersection": "^0.1.2",
     "array-unique": "^0.3.2",
     "body-parser": "^1.16.1",
     "debug": "~2.6.0",
@@ -20,6 +21,7 @@
     "graphql-tools": "^0.10.1",
     "hdf5": "git+https://github.com/pedson/hdf5.node.git#779be9d8485838d9ff5a246ab2775151331089ea",
     "influx": "^5.0.6",
+    "lodash": "^4.17.4",
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
     "subscriptions-transport-ws": "^0.5.5",
@@ -28,6 +30,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.0.35",
+    "@types/lodash": "^4.14.62",
     "@types/sequelize": "^4.0.40",
     "@types/uuid": "^2.0.29",
     "typescript": "^2.2.2"

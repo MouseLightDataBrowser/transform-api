@@ -1,5 +1,6 @@
 import {operatorIdValueMap} from "../models/search/queryOperator";
 const unique = require("array-unique");
+const _ = require("lodash");
 import {PubSub} from "graphql-subscriptions";
 import {FindOptions, IncludeOptions} from "sequelize";
 
@@ -40,6 +41,12 @@ export interface ITracingPage {
 
 export interface IDeleteTracingOutput {
     error: Error;
+}
+
+export enum FilterComposition {
+    none = 0,
+    and = 1,
+    or = 2
 }
 
 export interface IGraphQLServerContext {
@@ -220,7 +227,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         const start = Date.now();
 
         try {
-            const promises = filters.map(async (filter) => {
+            const promises = filters.map(async (filter, index) => {
                 let query: FindOptions = {
                     where: {},
                     include: null
@@ -301,33 +308,56 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             const queries = await Promise.all(promises);
 
-            let results = [];
+            let queryLogs = [];
 
-            if (queries.length > 0) {
-                results = await this._storageManager.BrainCompartment.findAll(queries[0]);
-                // const ids = idList.map(obj => obj.tracingId);
-                // return this._storageManager.Tracings.findAll({where: {id: {$in: ids}}});
+            const resultPromises = queries.map(async (query) => {
+                return this._storageManager.BrainCompartment.findAll(query);
+            });
 
-                const duration = Date.now() - start;
+            const results = await Promise.all(resultPromises);
 
-                // Fixes json -> string for model circular reference when logging.
-                const queryLogs = queries.map(q => {
-                    let ql = {where: q.where};
-                    if (q.include) {
-                        const include: IncludeOptions = q.include[0];
+            const compartments = results.reduce((prev, curr, index) => {
+                if (index === 0) {
+                    return curr;
+                }
 
-                        ql["include"] = [{
-                            model: "Tracings",
-                            where: include.where
-                        }];
-                    }
-                    return ql;
-                });
+                const all = unique(prev.concat(curr));
 
-                await this._storageManager.logQuery(filters, queryLogs, "", duration);
-            }
+                if (filters[index].composition === FilterComposition.and) {
+                    const tracingA = prev.map(p => p.tracingId);
+                    const tracingB = curr.map(c => c.tracingId);
 
-            return results;
+                    const validIds = _.intersection(tracingA, tracingB);
+
+                    return all.filter(a => {
+                        return validIds.includes(a.tracingId);
+                    })
+                } else {
+                    return unique(prev.concat(curr));
+                }
+            }, []);
+
+            const duration = Date.now() - start;
+
+            // Fixes json -> string for model circular reference when logging.
+            const queryLog = queries.map(q => {
+                let ql = {where: q.where};
+                if (q.include) {
+                    const include: IncludeOptions = q.include[0];
+
+                    ql["include"] = [{
+                        model: "Tracings",
+                        where: include.where
+                    }];
+                }
+                return ql;
+            });
+
+            queryLogs.push(queryLog);
+
+            await this._storageManager.logQuery(filters, queryLogs, "", duration);
+
+            return unique(compartments);
 
         } catch (err) {
             const duration = Date.now() - start;
