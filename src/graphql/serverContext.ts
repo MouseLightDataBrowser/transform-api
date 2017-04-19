@@ -289,9 +289,11 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                         opCode = operator.operator;
                     }
                     amount = filter.amount;
+                    debug(`found operator ${operator} with opCode ${opCode} for amount ${amount}`);
                 } else {
                     opCode = "$gt";
                     amount = 0;
+                    debug(`operator is null, using opCode ${opCode} for amount ${amount}`);
                 }
 
                 if (opCode) {
@@ -324,7 +326,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                     }
                 } else {
                     // TODO return error
-                    console.log("failed to find operator");
+                    debug("failed to find operator");
                 }
 
                 return query;
@@ -335,6 +337,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             let queryLogs = [];
 
             const resultPromises = queries.map(async (query) => {
+                debug(query);
                 return this._storageManager.BrainCompartment.findAll(query);
             });
 
