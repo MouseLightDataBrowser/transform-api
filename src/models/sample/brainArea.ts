@@ -19,7 +19,10 @@ export function sequelizeImport(sequelize, DataTypes) {
         structureIdPath: DataTypes.TEXT,
         name: DataTypes.TEXT,
         safeName: DataTypes.TEXT,
-        acronym: DataTypes.TEXT
+        acronym: DataTypes.TEXT,
+        geometryFile: DataTypes.TEXT,
+        geometryColor:  DataTypes.TEXT,
+        geometryEnable:  DataTypes.BOOLEAN
     }, {
         classMethods: {
             associate: models => {

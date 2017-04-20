@@ -18,6 +18,9 @@ type BrainArea {
     graphId: Int
     graphOrder: Int
     hemisphereId: Int
+    geometryFile: String
+    geometryColor: String
+    geometryEnable: Boolean
     createdAt: Float
     updatedAt: Float
 }

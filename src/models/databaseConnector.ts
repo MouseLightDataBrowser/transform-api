@@ -8,6 +8,7 @@ const config = require("../config/database.config");
 import {serverConfiguration} from "../config/server.config"
 
 import {loadModels} from "./modelLoader";
+import {loadAllenBrainAreaVolumes} from "./loadBrainAreaVolumes";
 
 export interface ISampleDatabaseModels {
     BrainArea?: any
@@ -130,6 +131,36 @@ async function authenticate(database, name) {
         database.isConnected = true;
 
         debug(`successful database connection: ${name}`);
+
+        // Ugly temporary hack
+        if (name === "sample") {
+            const testArea = await database.connection.models.BrainArea.findOne({where: {structureId: 449}});
+
+            if (testArea.geometryFile.length === 0) {
+                debug("brain area geometry does not appear to be seeded");
+                const volumes = loadAllenBrainAreaVolumes();
+
+                const areas = await database.connection.models.BrainArea.findAll({});
+
+                await Promise.all(areas.map(async (area) => {
+                    const volume = volumes.find(v => v.structureId === area.structureId);
+
+                    if (volume) {
+                        return area.update({
+                            id: area.id,
+                            geometryFile: volume.geometryFile,
+                            geometryColor: volume.geometryColor,
+                            geometryEnable: volume.geometryEnable
+                        });
+                    } else {
+                        debug(`failed to find match for brain area ${area.name}`);
+                        return Promise.resolve();
+                    }
+                }));
+            } else {
+                debug("brain area geometry appears to be seeded");
+            }
+        }
     } catch (err) {
         debug(`failed database connection: ${name}`);
         debug(err);
