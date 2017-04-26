@@ -1,6 +1,11 @@
 import {ISwcTracing} from "../swc/tracing";
 import {ITracingNode} from "./tracingNode";
 
+export enum ExportFormat {
+    SWC = 0,
+    JSON = 1
+}
+
 export interface ITracing {
     id: string;
     swcTracingId: string;

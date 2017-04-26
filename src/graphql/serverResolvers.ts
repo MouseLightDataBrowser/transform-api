@@ -1,12 +1,13 @@
 import {
-    IDeleteTracingOutput, IGraphQLServerContext, ITracingCompartmentOutput, ITracingPage, ITracingQueryPage,
+    IDeleteTracingOutput, IGraphQLServerContext, IRequestExportOutput, ITracingCompartmentOutput, ITracingPage,
+    ITracingQueryPage,
     ITracingsQueryInput
 } from "./serverContext";
 
 const debug = require("debug")("ndb:transform:resolvers");
 
 import {ISwcTracing} from "../models/swc/tracing";
-import {ITracing} from "../models/transform/tracing";
+import {ExportFormat, ITracing} from "../models/transform/tracing";
 import {ITracingNode, INodePage} from "../models/transform/tracingNode";
 import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
@@ -62,6 +63,11 @@ interface ITracingsArguments {
     queryInput: ITracingsQueryInput;
 }
 
+interface IRequestExportArguments {
+    tracingIds: string[];
+    format?: ExportFormat;
+}
+
 const resolvers = {
     Query: {
         queryOperators(_, __, ___): IQueryOperator[] {
@@ -111,8 +117,13 @@ const resolvers = {
         reapplyTransform(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITransformResult> {
             return context.reapplyTransform(args.id);
         },
+
         deleteTracings(_, args: ITracingIdsArguments, context: IGraphQLServerContext): Promise<IDeleteTracingOutput[]> {
             return context.deleteTracings(args.tracingIds);
+        },
+
+        requestExport(_, args: IRequestExportArguments, context: IGraphQLServerContext): Promise<IRequestExportOutput[]> {
+            return context.requestExport(args.tracingIds, args.format);
         }
     },
     Subscription: {

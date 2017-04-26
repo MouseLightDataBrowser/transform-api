@@ -184,6 +184,11 @@ type DeleteTracingOutput {
     error: Error
 }
 
+type RequestExportOutput {
+    filename: String
+    contents: String
+}
+
 input TracingsQueryInput {
     offset: Int
     limit: Int
@@ -229,7 +234,10 @@ type Query {
 type Mutation {
    applyTransform(swcId: String!): TransformMutationResult
    reapplyTransform(id: String!): TransformMutationResult
+   
    deleteTracings(tracingIds: [String!]): [DeleteTracingOutput!]
+   
+   requestExport(tracingIds: [String!], format: Int): [RequestExportOutput]
 }
 
 type Subscription {

@@ -9,7 +9,7 @@ const debug = require("debug")("ndb:transform:context");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
 import {ISwcTracing} from "../models/swc/tracing";
-import {ITracing} from "../models/transform/tracing";
+import {ExportFormat, ITracing} from "../models/transform/tracing";
 import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {ITracingNode, INodePage} from "../models/transform/tracingNode";
@@ -55,6 +55,11 @@ export interface ITracingQueryPage {
     error: Error;
 }
 
+export interface IRequestExportOutput {
+    filename: string;
+    contents: string;
+}
+
 export enum FilterComposition {
     none = 0,
     and = 1,
@@ -97,9 +102,13 @@ export interface IGraphQLServerContext {
 
     getUntransformedSwc(): Promise<ISwcTracing[]>;
 
+    // Mutations
     applyTransform(swcTracingId: string): Promise<ITransformResult>;
     reapplyTransform(tracingId: string): Promise<ITransformResult>;
+
     deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]>;
+
+    requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]>;
 }
 
 export class GraphQLServerContext implements IGraphQLServerContext {
@@ -575,4 +584,81 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return {error: null};
         }));
     }
+
+    public async requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]> {
+        if (!tracingIds || tracingIds.length === 0) {
+            return [];
+        }
+
+        const tracings = await this._storageManager.Tracings.findAll({where: {id: {$in: tracingIds}}});
+
+        if (tracings.length === 0) {
+            return [];
+        }
+
+        const idFunc = this._storageManager.StructureIdentifiers.idValue;
+
+        const promises: Promise<IRequestExportOutput>[] = (tracings.map((async (tracing) => {
+            const nodes: ITracingNode[] = await this._storageManager.Nodes.findAll({
+                where: {tracingId: tracing.id},
+                order: [["sampleNumber", "ASC"]]
+            });
+
+            const swcTracing: ISwcTracing = await this._storageManager.SwcTracings.findById(tracing.swcTracingId);
+
+            const transform: IRegistrationTransform = await this._storageManager.RegistrationTransforms.findById(tracing.registrationTransformId);
+
+            if (format === ExportFormat.SWC) {
+                return {
+                    contents: mapToSwc(tracing, swcTracing, transform, nodes, idFunc),
+                    filename: swcTracing.filename
+                };
+            } else {
+                return {
+                    contents: mapToJSON(tracing, swcTracing, transform, nodes, idFunc),
+                    filename: swcTracing.filename
+                };
+            }
+        })));
+
+        return Promise.all(promises);
+    }
+}
+
+function mapToSwc(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): string {
+    const header = `# Registered tracing exported from Mouse Light neuron data browser.\n`
+        + `# Exported: ${(new Date()).toUTCString()}\n`
+        + `# Source: ${swcTracing.filename}\n`
+        + `# Transform: ${transform.location}\n`
+        + `# Transformed: ${(new Date(tracing.transformedAt)).toUTCString()}\n`;
+
+    return nodes.reduce((prev, node) => {
+        return prev + `${node.sampleNumber}\t${idFunc(node.structureIdentifierId)}\t${node.x.toFixed(6)}\t${node.y.toFixed(6)}\t${node.z.toFixed(6)}\t${node.radius.toFixed(6)}\t${node.parentNumber}\n`;
+    }, header);
+}
+
+function mapToJSON(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): string {
+    const obj = {
+        info: {
+            exported: (new Date()).toUTCString(),
+            source: swcTracing.filename,
+            transform: transform.location,
+            transformed: (new Date(tracing.transformedAt)).toUTCString()
+        },
+        nodes: []
+    };
+
+    obj.nodes = nodes.map(n => {
+        return {
+            sampleNumber: n.sampleNumber,
+            structureIdentifier: idFunc(n.structureIdentifierId),
+            x: n.x,
+            y: n.y,
+            z: n.z,
+            radius: n.radius,
+            parentSample: n.parentNumber
+        }
+    });
+
+    return JSON.stringify(obj);
 }
