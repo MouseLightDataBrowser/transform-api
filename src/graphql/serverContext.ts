@@ -1,3 +1,4 @@
+import * as path from "path";
 import {operatorIdValueMap} from "../models/search/queryOperator";
 const unique = require("array-unique");
 const _ = require("lodash");
@@ -611,12 +612,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             if (format === ExportFormat.SWC) {
                 return {
                     contents: mapToSwc(tracing, swcTracing, transform, nodes, idFunc),
-                    filename: swcTracing.filename
+                    filename: path.basename(swcTracing.filename, path.extname(swcTracing.filename))
                 };
             } else {
                 return {
                     contents: mapToJSON(tracing, swcTracing, transform, nodes, idFunc),
-                    filename: swcTracing.filename
+                    filename: path.basename(swcTracing.filename, path.extname(swcTracing.filename))
                 };
             }
         })));
