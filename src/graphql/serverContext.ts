@@ -29,6 +29,7 @@ export interface ITracingsQueryInput {
     limit: number;
     tracingIds: string[];
     swcTracingIds: string[];
+    registrationTransformIds: string[];
     tracingStructureId: string;
 }
 
@@ -201,8 +202,13 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 }
             }
 
+
             if (swcStructureMatchIds.length > 0) {
                 options.where["swcTracingId"] = {$in: swcStructureMatchIds};
+            }
+
+            if (queryInput.registrationTransformIds && queryInput.registrationTransformIds.length > 0) {
+                options.where["registrationTransformId"] = {$in: queryInput.registrationTransformIds};
             }
 
             if (queryInput.tracingIds && queryInput.tracingIds.length > 0) {

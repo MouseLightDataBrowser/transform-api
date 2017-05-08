@@ -194,6 +194,7 @@ input TracingsQueryInput {
     limit: Int
     tracingIds: [String!]
     swcTracingIds: [String!]
+    registrationTransformIds: [String!]
     tracingStructureId: String
     nonce: String
 }
