@@ -44,7 +44,8 @@ function loadConfiguration() {
 
     let conf = configurations[env];
 
-    conf.envName = process.env.NODE_ENV || "development";
+    conf.envName = env;
+    conf.dbEnvName = process.env.DATABASE_ENV || env;
     conf.ontologyPath = process.env.ONTOLOGY_PATH || conf.ontologyPath;
 
     return conf;

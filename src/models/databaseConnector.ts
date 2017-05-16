@@ -1,3 +1,4 @@
+import * as path from "path";
 const Influx = require("influx");
 const Sequelize = require("sequelize");
 
@@ -9,6 +10,7 @@ import {serverConfiguration} from "../config/server.config"
 
 import {loadModels} from "./modelLoader";
 import {loadAllenBrainAreaVolumes} from "./loadBrainAreaVolumes";
+import * as fs from "fs";
 
 export interface ISampleDatabaseModels {
     BrainArea?: any
@@ -98,18 +100,20 @@ export class PersistentStorageManager {
     }
 
     public async logQuery(queryObject: any, querySql: any, errors: any, duration: number) {
-        this.influxDatabase.writePoints([
-            {
-                measurement: "query_response_times",
-                tags: {user: "none"},
-                fields: {
-                    queryObject: JSON.stringify(queryObject),
-                    querySql: JSON.stringify(querySql),
-                    errors: JSON.stringify(errors),
-                    duration
-                },
-            }
-        ]);
+        if (this.influxDatabase) {
+            this.influxDatabase.writePoints([
+                {
+                    measurement: "query_response_times",
+                    tags: {user: "none"},
+                    fields: {
+                        queryObject: JSON.stringify(queryObject),
+                        querySql: JSON.stringify(querySql),
+                        errors: JSON.stringify(errors),
+                        duration
+                    },
+                }
+            ]);
+        }
     }
 
     public async initialize() {
@@ -136,29 +140,33 @@ async function authenticate(database, name) {
         if (name === "sample") {
             const testArea = await database.connection.models.BrainArea.findOne({where: {structureId: 449}});
 
-            if (testArea.geometryFile.length === 0) {
-                debug("brain area geometry does not appear to be seeded");
-                const volumes = loadAllenBrainAreaVolumes();
+            if (testArea) {
+                if (testArea.geometryFile.length === 0) {
+                    debug("brain area geometry does not appear to be seeded");
+                    const volumes = loadAllenBrainAreaVolumes();
 
-                const areas = await database.connection.models.BrainArea.findAll({});
+                    const areas = await database.connection.models.BrainArea.findAll({});
 
-                await Promise.all(areas.map(async (area) => {
-                    const volume = volumes.find(v => v.structureId === area.structureId);
+                    await Promise.all(areas.map(async (area) => {
+                        const volume = volumes.find(v => v.structureId === area.structureId);
 
-                    if (volume) {
-                        return area.update({
-                            id: area.id,
-                            geometryFile: volume.geometryFile,
-                            geometryColor: volume.geometryColor,
-                            geometryEnable: volume.geometryEnable
-                        });
-                    } else {
-                        debug(`failed to find match for brain area ${area.name}`);
-                        return Promise.resolve();
-                    }
-                }));
+                        if (volume) {
+                            return area.update({
+                                id: area.id,
+                                geometryFile: volume.geometryFile,
+                                geometryColor: volume.geometryColor,
+                                geometryEnable: volume.geometryEnable
+                            });
+                        } else {
+                            debug(`failed to find match for brain area ${area.name}`);
+                            return Promise.resolve();
+                        }
+                    }));
+                } else {
+                    debug("brain area geometry appears to be seeded");
+                }
             } else {
-                debug("brain area geometry appears to be seeded");
+                debug("brain areas not seeded, skipping brain geometry")
             }
         }
     } catch (err) {
@@ -169,8 +177,14 @@ async function authenticate(database, name) {
 }
 
 function createConnection<T>(name: string, models: T) {
-    // Pull the host information from the regular node env.  Local vs. docker container, etc.
-    const databaseConfig = config[name][serverConfiguration.envName];
+    let databaseConfig = config[name][serverConfiguration.dbEnvName];
+
+    const sFile = path.normalize(path.join(__dirname, "../config/secrets.config"));
+
+    if (fs.existsSync(sFile + ".js")) {
+        const secrets = require(sFile);
+        databaseConfig = Object.assign(databaseConfig, secrets[name][serverConfiguration.dbEnvName]);
+    }
 
     let db: ISequelizeDatabase<T> = {
         connection: null,
@@ -186,27 +200,31 @@ function createConnection<T>(name: string, models: T) {
 }
 
 function establishInfluxConnection() {
-    const databaseConfig = config["metrics"][serverConfiguration.envName];
+    if (config["metrics"][serverConfiguration.dbEnvName]) {
+        const databaseConfig = config["metrics"][serverConfiguration.envName];
 
-    return new Influx.InfluxDB({
-        host: databaseConfig.host,
-        port: databaseConfig.port,
-        database: databaseConfig.database,
-        schema: [
-            {
-                measurement: "query_response_times",
-                fields: {
-                    queryObject: Influx.FieldType.STRING,
-                    querySql: Influx.FieldType.STRING,
-                    errors: Influx.FieldType.STRING,
-                    duration: Influx.FieldType.INTEGER
-                },
-                tags: [
-                    "user"
-                ]
-            }
-        ]
-    });
+        return new Influx.InfluxDB({
+            host: databaseConfig.host,
+            port: databaseConfig.port,
+            database: databaseConfig.database,
+            schema: [
+                {
+                    measurement: "query_response_times",
+                    fields: {
+                        queryObject: Influx.FieldType.STRING,
+                        querySql: Influx.FieldType.STRING,
+                        errors: Influx.FieldType.STRING,
+                        duration: Influx.FieldType.INTEGER
+                    },
+                    tags: [
+                        "user"
+                    ]
+                }
+            ]
+        });
+    } else {
+        return null;
+    }
 }
 
 const _manager: PersistentStorageManager = new PersistentStorageManager();

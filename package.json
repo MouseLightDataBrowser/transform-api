@@ -1,13 +1,13 @@
 {
   "name": "transform-api",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "private": true,
   "scripts": {
     "start": "node src/transformApp.js",
     "dev": "DEBUG=ndb:transform* node --trace-warnings $NODE_DEBUG_OPTION src/transformApp.js",
     "test-docker": "docker build .",
-    "docker-build": "docker build --tag mouselightdatabrowser/transform-api .",
-    "docker-push": "docker push mouselightdatabrowser/transform-api"
+    "docker-build": "docker build --tag mouselightdatabrowser/transform-api:1.0.3 .",
+    "docker-push": "docker push mouselightdatabrowser/transform-api:1.0.3"
   },
   "dependencies": {
     "array-unique": "^0.3.2",
@@ -21,6 +21,7 @@
     "hdf5": "https://github.com/pedson/hdf5.node.git",
     "influx": "^5.0.6",
     "lodash": "^4.17.4",
+    "mssql": "^4.0.4",
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
     "subscriptions-transport-ws": "^0.5.5",

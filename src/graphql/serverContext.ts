@@ -286,14 +286,16 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                     })).map(o => o.structureIdPath + "%");
 
                     // Find all brain areas that are these or children of in terms of structure path.
-                    const comprehensiveBrainAreaIds = (await this._storageManager.BrainAreas.findAll({
-                        attributes: ["id"],
+                    const comprehensiveBrainAreaObjs = (await this._storageManager.BrainAreas.findAll({
+                        attributes: ["id", "structureIdPath"],
                         where: {structureIdPath: {$like: {$any: brainStructurePaths}}}
-                    })).map(o => o.id);
+                    }));
+
+                    const comprehensiveBrainAreaIds = comprehensiveBrainAreaObjs.map(o => o.id);
 
                     query.where["brainAreaId"] = {
                         $in: comprehensiveBrainAreaIds
-                    }
+                    };
                 }
 
                 let opCode = null;
@@ -325,6 +327,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                                 return obj;
                             }
 
+                            debug(`Failed to identify column name for count of structure id ${s}`);
+
                             return null;
                         }).filter(q => q !== null);
 
@@ -336,6 +340,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
                         if (columnName) {
                             query.where[columnName] = createOperator(opCode, amount);
+                        } else {
+                            debug(`Failed to identify column name for count of structure id ${filter.nodeStructureIds[0]}`);
                         }
                     } else {
                         query.where["nodeCount"] = createOperator(opCode, amount);
@@ -353,7 +359,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             let queryLogs = [];
 
             const resultPromises = queries.map(async (query) => {
-                debug(query);
                 return this._storageManager.BrainCompartment.findAll(query);
             });
 

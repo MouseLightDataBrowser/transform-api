@@ -1,28 +1,37 @@
 export = {
     "sample": {
         "development": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "localhost",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "samples_development",
             "dialect": "postgres",
             "logging": null
         },
         "test": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "sample-db",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "samples_test",
             "dialect": "postgres",
             "logging": null
         },
+        azure: {
+            database: "jrcndb",
+            host: "janeliandb.database.windows.net",
+            dialect: "mssql",
+            dialectOptions: {
+                encrypt: true
+            },
+            logging: null
+        },
         "production": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "sample-db",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "samples_production",
             "dialect": "postgres",
             "logging": null
@@ -30,28 +39,37 @@ export = {
     },
     "swc": {
         "development": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "localhost",
             "port": "5433",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "swc_development",
             "dialect": "postgres",
             "logging": null
         },
         "test": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "swc-db",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "swc_test",
             "dialect": "postgres",
             "logging": null
         },
+        azure: {
+            database: "jrcndb",
+            host: "janeliandb.database.windows.net",
+            dialect: "mssql",
+            dialectOptions: {
+                encrypt: true
+            },
+            logging: null
+        },
         "production": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "swc-db",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "swc_production",
             "dialect": "postgres",
             "logging": null
@@ -59,28 +77,37 @@ export = {
     },
     "transform": {
         "development": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "localhost",
             "port": "5434",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "transform_development",
             "dialect": "postgres",
             "logging": null
         },
         "test": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "transform-db",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "transform_test",
             "dialect": "postgres",
             "logging": null
         },
+        azure: {
+            database: "jrcndb",
+            host: "janeliandb.database.windows.net",
+            dialect: "mssql",
+            dialectOptions: {
+                encrypt: true
+            },
+            logging: null
+        },
         "production": {
+            username: "postgres",
+            password: "pgsecret",
             "host": "transform-db",
             "port": "5432",
-            "username": "postgres",
-            "password": "pgsecret",
             "database": "transform_production",
             "dialect": "postgres",
             "logging": null

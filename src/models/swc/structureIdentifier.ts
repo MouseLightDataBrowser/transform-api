@@ -1,3 +1,5 @@
+const debug = require("debug")("ndb:transform:structure-identifier");
+
 export interface IStructureIdentifier {
     id: string;
     name: string;
@@ -31,9 +33,6 @@ export function sequelizeImport(sequelize, DataTypes) {
         classMethods: {
             associate: models => {
                 StructureIdentifier.hasMany(models.SwcTracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
-            },
-            prepareContents: () => {
-                StructureIdentifier.buildIdValueMap();
             }
         },
         timestamps: true,
@@ -42,8 +41,14 @@ export function sequelizeImport(sequelize, DataTypes) {
 
     const map = new Map<string, number>();
 
+
+    StructureIdentifier.prepareContents = () => {
+        StructureIdentifier.buildIdValueMap();
+    };
+
     StructureIdentifier.buildIdValueMap = async () => {
         if (map.size === 0) {
+            debug("building id value map");
             const all = await StructureIdentifier.findAll({});
 
             all.forEach(s => {
