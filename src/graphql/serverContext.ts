@@ -269,6 +269,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                         attributes: ["id"],
                         where: {tracingStructureId: filter.tracingStructureIds[0]}
                     })).map(s => s.id);
+
+                    if (swcStructureMatchIds.length === 0) {
+                        // Asked for a structure type, and there are no entries of that type.  Unlikely except before
+                        // database is reasonably well populated.
+                        throw("There are no tracings with the specified tracing structure");
+                    }
                 }
 
                 if (swcStructureMatchIds.length > 0) {
@@ -432,7 +438,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         } catch (err) {
             const duration = Date.now() - start;
 
-            console.log(err);
+            debug(err);
 
             await this._storageManager.logQuery(filters, "", err, duration);
 
