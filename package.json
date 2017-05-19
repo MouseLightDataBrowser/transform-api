@@ -1,13 +1,17 @@
 {
   "name": "transform-api",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
+  "main": "index.js",
+  "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
+  "author": "Patrick Edson <pedson@leapscientific.com>",
+  "license": "Janelia",
+  "dockerRepository": "mouselightdatabrowser",
   "scripts": {
     "start": "node src/transformApp.js",
     "dev": "DEBUG=ndb:transform* node --trace-warnings $NODE_DEBUG_OPTION src/transformApp.js",
-    "test-docker": "docker build .",
-    "docker-build": "docker build --tag mouselightdatabrowser/transform-api:1.0.4 .",
-    "docker-push": "docker push mouselightdatabrowser/transform-api:1.0.4"
+    "docker-build": "gulp docker-build",
+    "release": "gulp release"
   },
   "dependencies": {
     "array-unique": "^0.3.2",
@@ -30,13 +34,12 @@
   },
   "devDependencies": {
     "@types/express": "^4.0.35",
+    "@types/gulp": "^4.0.3",
+    "@types/gulp-shell": "^0.0.30",
     "@types/lodash": "^4.14.62",
     "@types/sequelize": "^4.0.40",
     "@types/uuid": "^2.0.29",
+    "gulp": "^3.9.1",
+    "gulp-shell": "^0.6.3",
     "typescript": "^2.2.2"
-  },
-  "main": "index.js",
-  "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
-  "author": "Patrick Edson <pedson@leapscientific.com>",
-  "license": "Janelia"
-}
+  }}

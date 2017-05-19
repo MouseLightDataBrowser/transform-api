@@ -1,9 +1,7 @@
 node_modules
 
 # IDEs
-.idea/**/*.*
+.idea
 
 *.js.map
-
-config/**/*.js
-src/**/*.js
+*.js

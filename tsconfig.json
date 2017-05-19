@@ -6,7 +6,8 @@
     "sourceMap": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "gulpfile.ts"
   ],
   "exclude": [
     "node_modules"
