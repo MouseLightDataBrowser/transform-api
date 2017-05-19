@@ -11,16 +11,14 @@ const debug = require("debug")("ndb:transform:context");
 import {PersistentStorageManager} from "../models/databaseConnector";
 import {ISwcTracing} from "../models/swc/tracing";
 import {ExportFormat, ITracing} from "../models/transform/tracing";
-import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {ITracingNode, INodePage} from "../models/transform/tracingNode";
-import {IBrainArea} from "../models/sample/brainArea";
 import {ITransformResult, TransformManager} from "../transform/transformManager";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
 import {IPageInput} from "./interfaces/page";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
-import {INeuron} from "../models/sample/neuron";
+import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
 
 export const pubSub = new PubSub();
 
@@ -109,6 +107,7 @@ export interface IGraphQLServerContext {
     reapplyTransform(tracingId: string): Promise<ITransformResult>;
 
     deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]>;
+    deleteTracingsForSwc(swcIds: string[]): Promise<IDeleteTracingOutput[]>;
 
     requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]>;
 }
@@ -602,6 +601,13 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return {error: null};
         }));
     }
+
+    public async deleteTracingsForSwc(swcIds: string[]): Promise<IDeleteTracingOutput[]> {
+        const tracingIds = await this._storageManager.Tracings.findAll({where: {swcTracingId: {$in: swcIds}}});
+
+        return this.deleteTracings(tracingIds);
+    }
+
 
     public async requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]> {
         if (!tracingIds || tracingIds.length === 0) {

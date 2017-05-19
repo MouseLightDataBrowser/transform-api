@@ -1,7 +1,7 @@
-import {IBrainArea} from "../models/sample/brainArea";
 const hdf5 = require("hdf5").hdf5;
 const Access = require("hdf5/lib/globals").Access;
 import * as uuid from "uuid";
+import {IBrainArea} from "ndb-data-models";
 
 const debug = require("debug")("ndb:transform:node-worker");
 

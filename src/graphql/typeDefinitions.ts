@@ -237,6 +237,7 @@ type Mutation {
    reapplyTransform(id: String!): TransformMutationResult
    
    deleteTracings(tracingIds: [String!]): [DeleteTracingOutput!]
+   deleteTracingsForSwc(swcTracingIds: [String!]): [DeleteTracingOutput!]
    
    requestExport(tracingIds: [String!], format: Int): [RequestExportOutput]
 }

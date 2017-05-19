@@ -1,5 +1,5 @@
 import {
-    IDeleteTracingOutput, IGraphQLServerContext, IRequestExportOutput, ITracingCompartmentOutput, ITracingPage,
+    IDeleteTracingOutput, IGraphQLServerContext, IRequestExportOutput, ITracingPage,
     ITracingQueryPage,
     ITracingsQueryInput
 } from "./serverContext";
@@ -9,16 +9,14 @@ const debug = require("debug")("ndb:transform:resolvers");
 import {ISwcTracing} from "../models/swc/tracing";
 import {ExportFormat, ITracing} from "../models/transform/tracing";
 import {ITracingNode, INodePage} from "../models/transform/tracingNode";
-import {IRegistrationTransform} from "../models/sample/registrationTransform";
 import {ISwcNode} from "../models/swc/tracingNode";
-import {IBrainArea} from "../models/sample/brainArea";
 import {TransformManager, ITransformProgress, ITransformResult} from "../transform/transformManager";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IStructureIdentifier} from "../models/swc/structureIdentifier";
 import {IPageInput} from "./interfaces/page";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 import {IQueryOperator, operators} from "../models/search/queryOperator";
-import {INeuron} from "../models/sample/neuron";
+import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
 
 interface IIdOnlyArguments {
     id: string;
