@@ -26,6 +26,7 @@
     "influx": "^5.0.6",
     "lodash": "^4.17.4",
     "mssql": "^4.0.4",
+    "ndb-data-models": "^0.7.5",
     "pg": "^6.1.2",
     "sequelize": "^3.30.2",
     "subscriptions-transport-ws": "^0.5.5",
@@ -42,4 +43,5 @@
     "gulp": "^3.9.1",
     "gulp-shell": "^0.6.3",
     "typescript": "^2.2.2"
-  }}
+  }
+}

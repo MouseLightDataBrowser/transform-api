@@ -1,16 +1,13 @@
-import * as path from "path";
+import {SampleConnector} from "ndb-data-models";
 const Influx = require("influx");
 const Sequelize = require("sequelize");
 
 const debug = require("debug")("ndb:transform:database-connector");
 
-const config = require("../config/database.config");
-
-import {serverConfiguration} from "../config/server.config"
+import {DatabaseOptions} from "../options/serviceOptions"
 
 import {loadModels} from "./modelLoader";
 import {loadAllenBrainAreaVolumes} from "./loadBrainAreaVolumes";
-import * as fs from "fs";
 
 export interface ISampleDatabaseModels {
     BrainArea?: any
@@ -117,12 +114,12 @@ export class PersistentStorageManager {
     }
 
     public async initialize() {
-        await authenticate(this.sampleDatabase, "sample");
+        this.sampleDatabase = await createSampleConnection();
         await authenticate(this.swcDatabase, "swc");
         await authenticate(this.transformDatabase, "transform");
     }
 
-    private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels> = createConnection("sample", {});
+    private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels>;
     private swcDatabase: ISequelizeDatabase<ISwcDatabaseModels> = createConnection("swc", {});
     private transformDatabase: ISequelizeDatabase<ITransformDatabaseModels> = createConnection("transform", {});
     private influxDatabase = establishInfluxConnection();
@@ -176,15 +173,16 @@ async function authenticate(database, name) {
     }
 }
 
+async function createSampleConnection(): Promise<SampleConnector> {
+    const connector = new SampleConnector(DatabaseOptions.sample);
+
+    await connector.authenticate();
+
+    return connector;
+}
+
 function createConnection<T>(name: string, models: T) {
-    let databaseConfig = config[name][serverConfiguration.dbEnvName];
-
-    const sFile = path.normalize(path.join(__dirname, "../config/secrets.config"));
-
-    if (fs.existsSync(sFile + ".js")) {
-        const secrets = require(sFile);
-        databaseConfig = Object.assign(databaseConfig, secrets[name][serverConfiguration.dbEnvName]);
-    }
+    let databaseConfig = DatabaseOptions[name];
 
     let db: ISequelizeDatabase<T> = {
         connection: null,
@@ -200,8 +198,8 @@ function createConnection<T>(name: string, models: T) {
 }
 
 function establishInfluxConnection() {
-    if (config["metrics"][serverConfiguration.dbEnvName]) {
-        const databaseConfig = config["metrics"][serverConfiguration.envName];
+    if (DatabaseOptions["metrics"]) {
+        const databaseConfig = DatabaseOptions["metrics"];
 
         return new Influx.InfluxDB({
             host: databaseConfig.host,

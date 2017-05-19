@@ -6,7 +6,7 @@ import * as uuid from "uuid";
 const debug = require("debug")("ndb:transform:node-worker");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
-import {serverConfiguration} from "../config/server.config";
+import {ServiceOptions} from "../options/serviceOptions";
 import {StructureIdentifiers} from "../models/swc/structureIdentifier";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 
@@ -73,7 +73,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
 
-        const brainAreaReferenceFile = new hdf5.File(serverConfiguration.ontologyPath, Access.ACC_RDONLY);
+        const brainAreaReferenceFile = new hdf5.File(ServiceOptions.ontologyPath, Access.ACC_RDONLY);
 
         const brainTransformMatrix = brainAreaReferenceFile.getDatasetAttributes("OntologyAtlas")["Transformation_Matrix"];
 
