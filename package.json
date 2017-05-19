@@ -2,7 +2,7 @@
   "name": "transform-api",
   "version": "1.0.5",
   "private": true,
-  "main": "index.js",
+  "main": "src/transformApp.js",
   "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
   "author": "Patrick Edson <pedson@leapscientific.com>",
   "license": "Janelia",
