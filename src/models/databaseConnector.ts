@@ -7,7 +7,6 @@ const debug = require("debug")("ndb:transform:database-connector");
 import {DatabaseOptions} from "../options/serviceOptions"
 
 import {loadModels} from "./modelLoader";
-import {loadAllenBrainAreaVolumes} from "./loadBrainAreaVolumes";
 
 export interface ISampleDatabaseModels {
     BrainArea?: any
@@ -132,40 +131,6 @@ async function authenticate(database, name) {
         database.isConnected = true;
 
         debug(`successful database connection: ${name}`);
-
-        // Ugly temporary hack
-        if (name === "sample") {
-            const testArea = await database.connection.models.BrainArea.findOne({where: {structureId: 449}});
-
-            if (testArea) {
-                if (testArea.geometryFile.length === 0) {
-                    debug("brain area geometry does not appear to be seeded");
-                    const volumes = loadAllenBrainAreaVolumes();
-
-                    const areas = await database.connection.models.BrainArea.findAll({});
-
-                    await Promise.all(areas.map(async (area) => {
-                        const volume = volumes.find(v => v.structureId === area.structureId);
-
-                        if (volume) {
-                            return area.update({
-                                id: area.id,
-                                geometryFile: volume.geometryFile,
-                                geometryColor: volume.geometryColor,
-                                geometryEnable: volume.geometryEnable
-                            });
-                        } else {
-                            debug(`failed to find match for brain area ${area.name}`);
-                            return Promise.resolve();
-                        }
-                    }));
-                } else {
-                    debug("brain area geometry appears to be seeded");
-                }
-            } else {
-                debug("brain areas not seeded, skipping brain geometry")
-            }
-        }
     } catch (err) {
         debug(`failed database connection: ${name}`);
         debug(err);
