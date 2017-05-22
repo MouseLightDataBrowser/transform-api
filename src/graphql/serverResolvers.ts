@@ -26,6 +26,10 @@ interface ITracingIdsArguments {
     tracingIds: string[];
 }
 
+interface ISwcTracingIdsArguments {
+    swcTracingIds: string[];
+}
+
 interface ITransformArguments {
     swcId: string;
 }
@@ -118,6 +122,9 @@ const resolvers = {
 
         deleteTracings(_, args: ITracingIdsArguments, context: IGraphQLServerContext): Promise<IDeleteTracingOutput[]> {
             return context.deleteTracings(args.tracingIds);
+        },
+        deleteTracingsForSwc(_, args: ISwcTracingIdsArguments, context: IGraphQLServerContext): Promise<IDeleteTracingOutput[]> {
+            return context.deleteTracingsForSwc(args.swcTracingIds);
         },
 
         requestExport(_, args: IRequestExportArguments, context: IGraphQLServerContext): Promise<IRequestExportOutput[]> {

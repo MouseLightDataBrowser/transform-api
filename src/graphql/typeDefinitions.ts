@@ -181,6 +181,8 @@ type Error {
 }
 
 type DeleteTracingOutput {
+    id: String
+    swcTracingId: String
     error: Error
 }
 

@@ -40,6 +40,8 @@ export interface ITracingPage {
 }
 
 export interface IDeleteTracingOutput {
+    id: string;
+    swcTracingId: string;
     error: Error;
 }
 
@@ -523,7 +525,15 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         if (tracing) {
             const swcTracing = await this._storageManager.SwcTracings.findOne({where: {id: tracing.swcTracingId}});
 
+            if (!swcTracing) {
+                return {tracing: null, errors: [`Could not locate unregistered source SWC tracing`]};
+            }
+
             const registrationTransform = await this._storageManager.RegistrationTransforms.findOne({where: {id: tracing.registrationTransformId}});
+
+            if (!registrationTransform) {
+                return {tracing: null, errors: [`Could not locate registered transform in database`]};
+            }
 
             const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
 
@@ -532,7 +542,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return result;
         }
 
-        return {tracing: null, errors: [`Could not locate tracing`]};
+        return {tracing: null, errors: [`Could not locate registered tracing`]};
     }
 
     public async getNodeBrainArea(node: ITracingNode): Promise<IBrainArea> {
@@ -577,12 +587,25 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]> {
+        if (!ids) {
+            return null;
+        }
+
         return Promise.all(ids.map(async (id) => {
-            let tracing = await
-                this._storageManager.Tracings.findById(id);
+            let tracing: ITracing = await this._storageManager.Tracings.findById(id);
 
             if (!tracing) {
-                return {error: {name: "DoesNotExistError", message: "A tracing with that id does not exist"}};
+                return createDeletedTracingOutput(tracing.id, tracing.swcTracingId, {
+                    name: "DoesNotExistError",
+                    message: "A tracing with that id does not exist"
+                });
+            }
+
+            if (TransformManager.Instance().statusForTracing(tracing)) {
+                return createDeletedTracingOutput(tracing.id, tracing.swcTracingId, {
+                    name: "TransformInProgressError",
+                    message: "Tracing can not be deleted while a transform is in progress"
+                });
             }
 
             try {
@@ -595,19 +618,21 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 });
             } catch (err) {
                 debug(err);
-                return {error: {name: err.name, message: err.message}};
+                return createDeletedTracingOutput(tracing.id, tracing.swcTracingId, {
+                    name: err.name,
+                    message: err.message
+                });
             }
 
-            return {error: null};
+            return createDeletedTracingOutput(tracing.id, tracing.swcTracingId, null);
         }));
     }
 
     public async deleteTracingsForSwc(swcIds: string[]): Promise<IDeleteTracingOutput[]> {
-        const tracingIds = await this._storageManager.Tracings.findAll({where: {swcTracingId: {$in: swcIds}}});
+        const tracingIds = await this._storageManager.Tracings.findAll({where: {swcTracingId: {$in: swcIds}}}).map(o => o.id);
 
         return this.deleteTracings(tracingIds);
     }
-
 
     public async requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]> {
         if (!tracingIds || tracingIds.length === 0) {
@@ -685,4 +710,8 @@ function mapToJSON(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegis
     });
 
     return JSON.stringify(obj);
+}
+
+function createDeletedTracingOutput(id: string, swcTracingId: string, error = null): IDeleteTracingOutput {
+    return {id, swcTracingId, error};
 }
