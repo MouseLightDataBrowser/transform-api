@@ -115,6 +115,12 @@ export class PersistentStorageManager {
     public async initialize() {
         this.sampleDatabase = await createSampleConnection();
         await authenticate(this.swcDatabase, "swc");
+        Object.keys(this.swcDatabase.models).forEach(modelName => {
+            if (this.swcDatabase.models[modelName].prepareContents) {
+                this.swcDatabase.models[modelName].prepareContents(this.swcDatabase.models);
+            }
+        });
+
         await authenticate(this.transformDatabase, "transform");
     }
 
