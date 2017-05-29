@@ -41,16 +41,13 @@ export function sequelizeImport(sequelize, DataTypes) {
 
     const map = new Map<string, number>();
 
-
     StructureIdentifier.prepareContents = () => {
         StructureIdentifier.buildIdValueMap();
     };
 
     StructureIdentifier.buildIdValueMap = async () => {
         if (map.size === 0) {
-            debug("building id value map");
             const all = await StructureIdentifier.findAll({});
-
             all.forEach(s => {
                 map.set(s.id, s.value);
             });
@@ -59,6 +56,10 @@ export function sequelizeImport(sequelize, DataTypes) {
 
     StructureIdentifier.idValue = (id: string) => {
         return map.get(id);
+    };
+
+    StructureIdentifier.structuresAreLoaded = () => {
+        return map.size > 0;
     };
 
     StructureIdentifier.countColumnName = (s: number | string | IStructureIdentifier) => {

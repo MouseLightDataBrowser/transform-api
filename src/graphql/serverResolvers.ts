@@ -97,7 +97,11 @@ const resolvers = {
             return context.getTracing(args.id);
         },
         tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<ITracingQueryPage> {
-            return context.getTracingsWithFilters(args.filters);
+            try {
+                return context.getTracingsWithFilters(args.filters);
+            } catch (err) {
+                debug(err);
+            }
         },
         tracingNodePage(_, args: INodePageArguments, context: IGraphQLServerContext): Promise<INodePage> {
             return context.getNodePage(args.page);
@@ -133,7 +137,11 @@ const resolvers = {
     },
     Subscription: {
         transformApplied(payload: ISwcTracing): ISwcTracing {
-            return payload;
+            try {
+                return payload;
+            } catch (err) {
+                debug(err);
+            }
         }
     },
     Tracing: {

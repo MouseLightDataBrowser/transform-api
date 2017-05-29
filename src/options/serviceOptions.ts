@@ -89,12 +89,18 @@ function loadConfiguration(): IServiceOptions {
     const dbEnvName = process.env.DATABASE_ENV || envName;
 
     c.databaseOptions.sample = Databases.sample[dbEnvName];
+    c.databaseOptions.sample.host = process.env.SAMPLE_DB_HOST || c.databaseOptions.sample.host;
+    c.databaseOptions.sample.port = process.env.SAMPLE_DB_PORT || c.databaseOptions.sample.port;
     c.databaseOptions.sample.password = process.env.DATABASE_PW || "pgsecret";
 
     c.databaseOptions.swc = Databases.swc[dbEnvName];
+    c.databaseOptions.swc.host = process.env.SWC_DB_HOST || c.databaseOptions.swc.host;
+    c.databaseOptions.swc.port = process.env.SWC_DB_PORT || c.databaseOptions.swc.port;
     c.databaseOptions.swc.password = process.env.DATABASE_PW || "pgsecret";
 
     c.databaseOptions.transform = Databases.transform[dbEnvName];
+    c.databaseOptions.transform.host = process.env.TRANSFORM_DB_HOST || c.databaseOptions.transform.host;
+    c.databaseOptions.transform.port = process.env.TRANSFORM_DB_PORT || c.databaseOptions.transform.port;
     c.databaseOptions.transform.password = process.env.DATABASE_PW || "pgsecret";
 
     c.databaseOptions.metrics = Databases.sample[dbEnvName];
