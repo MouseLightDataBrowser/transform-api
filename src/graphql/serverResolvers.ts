@@ -114,6 +114,10 @@ const resolvers = {
         },
         untransformedSwc(_, __, context: IGraphQLServerContext): Promise<ISwcTracing[]> {
             return context.getUntransformedSwc();
+        },
+
+        systemMessage(): String {
+            return systemMessage;
         }
     },
     Mutation: {
@@ -133,6 +137,17 @@ const resolvers = {
 
         requestExport(_, args: IRequestExportArguments, context: IGraphQLServerContext): Promise<IRequestExportOutput[]> {
             return context.requestExport(args.tracingIds, args.format);
+        },
+
+        setSystemMessage(_, args: any): boolean {
+            systemMessage = args.message;
+
+            return true;
+        },
+        clearSystemMessage(): boolean {
+            systemMessage = "";
+
+            return true;
         }
     },
     Subscription: {
@@ -209,5 +224,7 @@ const resolvers = {
         }
     }
 };
+
+let systemMessage: String = "";
 
 export default resolvers;

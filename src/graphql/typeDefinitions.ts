@@ -232,6 +232,8 @@ type Query {
     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
     brainCompartmentContents: [BrainCompartmentContent!]!
     untransformedSwc: [SwcTracing!]!
+    
+    systemMessage: String
 }
 
 type Mutation {
@@ -242,6 +244,9 @@ type Mutation {
    deleteTracingsForSwc(swcTracingIds: [String!]): [DeleteTracingOutput!]
    
    requestExport(tracingIds: [String!], format: Int): [RequestExportOutput]
+   
+   setSystemMessage(message: String): Boolean
+   clearSystemMessage: Boolean
 }
 
 type Subscription {

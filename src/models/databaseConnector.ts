@@ -178,6 +178,7 @@ function createConnection<T>(name: string, models: T) {
 function establishInfluxConnection() {
     if (DatabaseOptions["metrics"]) {
         const databaseConfig = DatabaseOptions["metrics"];
+
         return new Influx.InfluxDB({
             host: databaseConfig.host,
             port: databaseConfig.port,
