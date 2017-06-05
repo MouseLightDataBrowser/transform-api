@@ -1,6 +1,5 @@
 import * as path from "path";
 import {operatorIdValueMap} from "../models/search/queryOperator";
-const unique = require("array-unique");
 const _ = require("lodash");
 import {PubSub} from "graphql-subscriptions";
 import {FindOptions, IncludeOptions} from "sequelize";
@@ -376,7 +375,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                     return curr;
                 }
 
-                const all = unique(prev.concat(curr));
+                const all = _.uniqBy(prev.concat(curr), "tracingId");
 
                 if (filters[index].composition === FilterComposition.and) {
                     const tracingA = prev.map(p => p.tracingId);
@@ -388,7 +387,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                         return validIds.includes(a.tracingId);
                     })
                 } else {
-                    return _.uniqBy(prev.concat(curr), "tracingId");
+                    return all;
                 }
             }, []);
 
@@ -575,7 +574,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return this._storageManager.SwcTracings.findAll({});
         }
 
-        const ids = unique(obj.map(o => o.swcTracingId));
+        const ids = _.uniq(obj.map(o => o.swcTracingId));
 
         return this._storageManager.SwcTracings.findAll({
             where: {
