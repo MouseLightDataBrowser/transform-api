@@ -40,6 +40,7 @@ export function sequelizeImport(sequelize, DataTypes) {
     });
 
     const map = new Map<string, number>();
+    const reverseMap = new Map<number, String>();
 
     StructureIdentifier.prepareContents = () => {
         StructureIdentifier.buildIdValueMap();
@@ -50,12 +51,17 @@ export function sequelizeImport(sequelize, DataTypes) {
             const all = await StructureIdentifier.findAll({});
             all.forEach(s => {
                 map.set(s.id, s.value);
+                reverseMap.set(s.value, s.id);
             });
         }
     };
 
     StructureIdentifier.idValue = (id: string) => {
         return map.get(id);
+    };
+
+    StructureIdentifier.valueId = (value: number) => {
+        return reverseMap.get(value);
     };
 
     StructureIdentifier.structuresAreLoaded = () => {

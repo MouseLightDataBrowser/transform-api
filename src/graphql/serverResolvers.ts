@@ -178,6 +178,9 @@ const resolvers = {
         nodes(tracing: ITracing, args: ITracingNodesArguments, context: IGraphQLServerContext): Promise<ITracingNode[]> {
             return context.getNodes(tracing, args.brainAreaIds);
         },
+        keyNodes(tracing: ITracing, args: ITracingNodesArguments, context: IGraphQLServerContext): Promise<ITracingNode[]> {
+            return context.getKeyNodes(tracing, args.brainAreaIds);
+        },
         transformStatus(tracing, _, __): ITransformProgress {
             return TransformManager.Instance().statusForTracing(tracing);
         }

@@ -4,7 +4,7 @@ const _ = require("lodash");
 import {PubSub} from "graphql-subscriptions";
 import {FindOptions, IncludeOptions} from "sequelize";
 
-import {IStructureIdentifier} from "../models/swc/structureIdentifier";
+import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 const debug = require("debug")("ndb:transform:context");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
@@ -89,6 +89,7 @@ export interface IGraphQLServerContext {
     getNodeCount(tracing: ITracing): Promise<number>;
     getFirstTracingNode(tracing: ITracing): Promise<ITracingNode>;
     getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
+    getKeyNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
     getNodePage(page: IPageInput): Promise<INodePage>;
     getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage>;
     getTracingStructure(tracing: ITracing): Promise<ITracingStructure>;
@@ -476,6 +477,38 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         }
 
         return this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
+    }
+
+    public async getKeyNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]> {
+        if (!tracing || !tracing.id) {
+            return [];
+        }
+
+        const undefinedStructureId = this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.undefined);
+
+        let nodes = await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
+
+        const lookup = {};
+
+        nodes.forEach(n => lookup[n.sampleNumber] = n);
+
+        nodes = nodes.filter(n => n.structureIdentifierId !== undefinedStructureId);
+
+        nodes = nodes.map(n => {
+           let parent = lookup[n.parentNumber];
+
+           if (parent) {
+               while (parent.structureIdentifierId === undefinedStructureId) {
+                   parent = lookup[parent.parentNumber];
+               }
+
+               n.parentNumber = parent.sampleNumber;
+           }
+
+           return n;
+        });
+
+        return nodes;
     }
 
     public async getNodePage(page: IPageInput): Promise<INodePage> {

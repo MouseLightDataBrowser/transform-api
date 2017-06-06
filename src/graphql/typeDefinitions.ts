@@ -100,6 +100,7 @@ type Tracing {
     registrationTransform: RegistrationTransform
     tracingStructure: TracingStructure
     nodes(brainAreaIds: [String!]): [Node!]!
+    keyNodes(brainAreaIds: [String!]): [Node!]!
     nodeCount: Int
     pathCount: Int
     branchCount: Int
