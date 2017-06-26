@@ -194,10 +194,10 @@ const resolvers = {
         },
         structureIdValue(node: ITracingNode, _, context: IGraphQLServerContext): number {
             return context.getStructureIdValue(node.structureIdentifierId);
-        },
-        brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
-            return context.getNodeBrainArea(node);
         }
+        //brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
+        //    return context.getNodeBrainArea(node);
+       // }
     },
     SwcTracing: {
         firstNode(tracing, _, context: IGraphQLServerContext): Promise<ISwcNode> {

@@ -1,4 +1,6 @@
 import {IPageInput, validatePageInput} from "../../graphql/interfaces/page";
+import {IBrainArea} from "ndb-data-models";
+
 export interface ITracingNode {
     id: string;
     tracingId: string;
@@ -12,6 +14,8 @@ export interface ITracingNode {
     lengthToParent: number;
     structureIdentifierId: string;
     brainAreaId: string;
+    brainArea?: IBrainArea;
+    createdAt: Date;
     updatedAt: Date;
 }
 

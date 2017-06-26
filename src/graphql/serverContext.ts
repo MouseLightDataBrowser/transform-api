@@ -3,6 +3,7 @@ import {operatorIdValueMap} from "../models/search/queryOperator";
 const _ = require("lodash");
 import {PubSub} from "graphql-subscriptions";
 import {FindOptions, IncludeOptions} from "sequelize";
+import * as DataLoader from "dataloader";
 
 import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 const debug = require("debug")("ndb:transform:context");
@@ -117,6 +118,16 @@ export interface IGraphQLServerContext {
 export class GraphQLServerContext implements IGraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
 
+    private _brainAreaDataLoader = null;
+
+    public constructor() {
+        this._brainAreaDataLoader = new DataLoader((ids: string[]) => this.loadBrainAreas(ids));
+    }
+
+    private async loadBrainAreas(ids: string[]) {
+        return this._storageManager.BrainAreas.findAll({where: {id: {$in: ids}}});
+    }
+
     public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
         return this._storageManager.StructureIdentifiers.findAll({});
     }
@@ -129,12 +140,16 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.TracingStructures.findAll({});
     }
 
-    public async getBrainAreas(): Promise<IBrainArea[]> {
-        return this._storageManager.BrainAreas.findAll({});
+    public async getBrainAreas(ids: string[] = null): Promise<IBrainArea[]> {
+        if (!ids || ids.length == 0) {
+            return this._storageManager.BrainAreas.findAll({});
+        } else {
+            return this._brainAreaDataLoader.load(ids);
+        }
     }
 
     public async getBrainArea(id: string): Promise<IBrainArea> {
-        return this._storageManager.BrainAreas.findById(id);
+        return this._brainAreaDataLoader.load(id);
     }
 
     public async getSwcTracings(): Promise<ISwcTracing[]> {
@@ -202,7 +217,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                     swcStructureMatchIds = swcSearchIds;
                 }
             }
-
 
             if (swcStructureMatchIds.length > 0) {
                 options.where["swcTracingId"] = {$in: swcStructureMatchIds};
@@ -476,7 +490,17 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return [];
         }
 
-        return this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
+        let r = await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
+
+        r = await Promise.all(r.map(async (o) => {
+           o.brainArea = await this.getNodeBrainArea(o);
+           
+           return o;
+        }));
+
+        return r;
+
+        // return this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
     }
 
     public async getKeyNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]> {
@@ -495,17 +519,17 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         nodes = nodes.filter(n => n.structureIdentifierId !== undefinedStructureId);
 
         nodes = nodes.map(n => {
-           let parent = lookup[n.parentNumber];
+            let parent = lookup[n.parentNumber];
 
-           if (parent) {
-               while (parent.structureIdentifierId === undefinedStructureId) {
-                   parent = lookup[parent.parentNumber];
-               }
+            if (parent) {
+                while (parent.structureIdentifierId === undefinedStructureId) {
+                    parent = lookup[parent.parentNumber];
+                }
 
-               n.parentNumber = parent.sampleNumber;
-           }
+                n.parentNumber = parent.sampleNumber;
+            }
 
-           return n;
+            return n;
         });
 
         return nodes;
@@ -516,8 +540,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage> {
-        console.log(filters);
-
         if (!filters || filters.length === 0) {
             return this.getNodePage(page);
         }
@@ -578,7 +600,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNodeBrainArea(node: ITracingNode): Promise<IBrainArea> {
-        return this._storageManager.BrainAreas.findOne({where: {id: node.brainAreaId}});
+        return this._brainAreaDataLoader.load(node.brainAreaId);
     }
 
     public async getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier> {
