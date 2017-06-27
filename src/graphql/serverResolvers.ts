@@ -197,7 +197,7 @@ const resolvers = {
         }
         //brainArea(node, _, context: IGraphQLServerContext): Promise<IBrainArea> {
         //    return context.getNodeBrainArea(node);
-       // }
+        // }
     },
     SwcTracing: {
         firstNode(tracing, _, context: IGraphQLServerContext): Promise<ISwcNode> {

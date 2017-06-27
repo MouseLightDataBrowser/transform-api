@@ -115,18 +115,12 @@ export interface IGraphQLServerContext {
     requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]>;
 }
 
+const _storageManager = PersistentStorageManager.Instance();
+
+const _brainAreaDataLoader = new DataLoader<string, IBrainArea>((ids: string[]) => _storageManager.BrainAreas.findAll({where: {id: {$in: ids}}}));
+
 export class GraphQLServerContext implements IGraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
-
-    private _brainAreaDataLoader = null;
-
-    public constructor() {
-        this._brainAreaDataLoader = new DataLoader((ids: string[]) => this.loadBrainAreas(ids));
-    }
-
-    private async loadBrainAreas(ids: string[]) {
-        return this._storageManager.BrainAreas.findAll({where: {id: {$in: ids}}});
-    }
 
     public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
         return this._storageManager.StructureIdentifiers.findAll({});
@@ -144,12 +138,16 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         if (!ids || ids.length == 0) {
             return this._storageManager.BrainAreas.findAll({});
         } else {
-            return this._brainAreaDataLoader.load(ids);
+            return _brainAreaDataLoader.loadMany(ids);
         }
     }
 
     public async getBrainArea(id: string): Promise<IBrainArea> {
-        return this._brainAreaDataLoader.load(id);
+        if (id) {
+            return _brainAreaDataLoader.load(id);
+        } else {
+            return null;
+        }
     }
 
     public async getSwcTracings(): Promise<ISwcTracing[]> {
@@ -177,7 +175,17 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNeuron(id: string): Promise<INeuron> {
-        return this._storageManager.Neurons.findById(id);
+        const n = await this._storageManager.Neurons.findById(id);
+
+        if (n.brainAreaId) {
+            n.brainArea = await this.getBrainArea(n.brainAreaId);
+        } else {
+            const i = await n.getInjection();
+
+            n.brainArea = await this.getBrainArea(i.brainAreaId);
+        }
+
+        return n;
     }
 
     public async getRegistrationTransform(id: string): Promise<IRegistrationTransform> {
@@ -428,8 +436,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             const totalCount = await this._storageManager.Tracings.count({});
 
-            const duration = Date.now() - start;
-
             // Fixes json -> string for model circular reference when logging.
             const queryLog = queries.map(q => {
                 let ql = {where: q.where};
@@ -445,6 +451,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             });
 
             queryLogs.push(queryLog);
+
+            const duration = Date.now() - start;
 
             await this._storageManager.logQuery(filters, queryLogs, "", duration);
 
@@ -493,9 +501,9 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         let r = await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
 
         r = await Promise.all(r.map(async (o) => {
-           o.brainArea = await this.getNodeBrainArea(o);
-           
-           return o;
+            o.brainArea = await this.getNodeBrainArea(o);
+
+            return o;
         }));
 
         return r;
@@ -600,7 +608,11 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getNodeBrainArea(node: ITracingNode): Promise<IBrainArea> {
-        return this._brainAreaDataLoader.load(node.brainAreaId);
+        if (node.brainAreaId) {
+            return _brainAreaDataLoader.load(node.brainAreaId);
+        } else {
+            return null;
+        }
     }
 
     public async getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier> {

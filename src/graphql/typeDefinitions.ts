@@ -57,6 +57,7 @@ type Neuron {
     idString: String
     tag: String
     keywords: String
+    brainArea: BrainArea
     createdAt: Float
     updatedAt: Float
 }
