@@ -38,7 +38,7 @@ function graphqlRequestHandler(req) {
         throw new Error("Query too large.");
     }
 
-    let appContext = new GraphQLServerContext();
+    const appContext = new GraphQLServerContext();
 
     return {
         schema: schema,

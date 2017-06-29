@@ -7,6 +7,7 @@ const debug = require("debug")("ndb:transform:server");
 import {ServiceOptions} from "./options/serviceOptions";
 
 import {graphQLMiddleware, graphiQLMiddleware, graphQLSubscriptions} from "./graphql/middleware/graphQLMiddleware";
+import {tracingQueryMiddleware} from "./rawquery/tracingQueryMiddleware";
 
 const PORT = process.env.API_PORT || ServiceOptions.serverOptions.port;
 
@@ -15,6 +16,8 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(bodyParser.json());
+
+app.use("/tracings", tracingQueryMiddleware);
 
 app.use(ServiceOptions.serverOptions.graphQlEndpoint, graphQLMiddleware());
 

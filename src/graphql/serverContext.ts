@@ -23,12 +23,12 @@ import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
 export const pubSub = new PubSub();
 
 export interface ITracingsQueryInput {
-    offset: number;
-    limit: number;
-    tracingIds: string[];
-    swcTracingIds: string[];
-    registrationTransformIds: string[];
-    tracingStructureId: string;
+    offset?: number;
+    limit?: number;
+    tracingIds?: string[];
+    swcTracingIds?: string[];
+    registrationTransformIds?: string[];
+    tracingStructureId?: string;
 }
 
 export interface ITracingPage {

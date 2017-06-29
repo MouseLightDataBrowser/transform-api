@@ -8,18 +8,18 @@ export enum ExportFormat {
 
 export interface ITracing {
     id: string;
-    swcTracingId: string;
-    registrationTransformId: string;
-    nodeCount: number;
-    pathCount: number;
-    branchCount: number;
-    endCount: number;
-    transformedAt: Date;
-    createdAt: Date;
-    updatedAt: Date;
+    swcTracingId?: string;
+    registrationTransformId?: string;
+    nodeCount?: number;
+    pathCount?: number;
+    branchCount?: number;
+    endCount?: number;
+    transformedAt?: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 
-    getNodes(): ITracingNode[];
-    applyTransform();
+    getNodes?(): ITracingNode[];
+    applyTransform?();
 }
 
 export const TableName = "Tracing";
