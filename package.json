@@ -1,6 +1,6 @@
 {
   "name": "transform-api",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "private": true,
   "main": "src/transformApp.js",
   "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
@@ -8,8 +8,8 @@
   "license": "Janelia",
   "dockerRepository": "mouselightdatabrowser",
   "scripts": {
-    "start": "node src/transformApp.js",
-    "dev": "DEBUG=ndb:transform* node --trace-warnings $NODE_DEBUG_OPTION src/transformApp.js",
+    "start": "node --max-old-space-size=8192 --optimize-for-size src/transformApp.js",
+    "dev": "DEBUG=ndb:transform* node --trace-warnings --max-old-space-size=8192 --optimize-for-size $NODE_DEBUG_OPTION src/transformApp.js",
     "docker-build": "gulp docker-build",
     "release": "gulp release"
   },
