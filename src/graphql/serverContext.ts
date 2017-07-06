@@ -117,7 +117,12 @@ export interface IGraphQLServerContext {
 
 const _storageManager = PersistentStorageManager.Instance();
 
-const _brainAreaDataLoader = new DataLoader<string, IBrainArea>((ids: string[]) => _storageManager.BrainAreas.findAll({where: {id: {$in: ids}}}));
+const _brainAreaDataLoader = new DataLoader<string, IBrainArea>(async (ids: string[]) => {
+    // Does not return in same order as data loader provides.
+    const areas = await _storageManager.BrainAreas.findAll({where: {id: {$in: ids}}});
+
+    return ids.map(id => areas.find(a => a.id === id));
+});
 
 export class GraphQLServerContext implements IGraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
@@ -612,8 +617,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getNodeBrainArea(node: ITracingNode): Promise<IBrainArea> {
         if (node.brainAreaId) {
-            // return _brainAreaDataLoader.load(node.brainAreaId);
-            return this._storageManager.BrainAreas.findById(node.brainAreaId);
+            return _brainAreaDataLoader.load(node.brainAreaId);
+            // return this._storageManager.BrainAreas.findById(node.brainAreaId);
         } else {
             return null;
         }
