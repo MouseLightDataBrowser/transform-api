@@ -1,5 +1,5 @@
 import {
-    IDeleteTracingOutput, IGraphQLServerContext, IRequestExportOutput, ITracingPage,
+    IDeleteTracingOutput, IGraphQLServerContext, IQueryDataPage, IRequestExportOutput, ITracingPage,
     ITracingQueryPage,
     ITracingsQueryInput
 } from "./serverContext";
@@ -98,7 +98,14 @@ const resolvers = {
         },
         tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<ITracingQueryPage> {
             try {
-                return context.getTracingsWithFilters(args.filters);
+                return context.getTracingsWithFilters(args.filters || []);
+            } catch (err) {
+                debug(err);
+            }
+        },
+        queryData(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<IQueryDataPage> {
+            try {
+                return context.getNeuronsWithFilters(args.filters || []);
             } catch (err) {
                 debug(err);
             }

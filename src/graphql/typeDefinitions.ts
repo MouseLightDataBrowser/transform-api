@@ -58,6 +58,7 @@ type Neuron {
     tag: String
     keywords: String
     brainArea: BrainArea
+    tracings: [Tracing]
     createdAt: Float
     updatedAt: Float
 }
@@ -176,6 +177,13 @@ type TracingQueryPage {
     queryTime: Int
     error: Error
 }
+
+type QueryOutput {
+    neurons: [Neuron]
+    totalCount: Int
+    queryTime: Int
+    error: Error
+} 
     
 type Error {
     message: String
@@ -225,14 +233,22 @@ type Query {
     brainAreas: [BrainArea!]!
     structureIdentifiers: [StructureIdentifier!]!
     tracingStructures: [TracingStructure!]!
+    
     swcTracings: [SwcTracing!]!
     swcTracing(id: String): SwcTracing!
+    
     tracings(queryInput: TracingsQueryInput): TracingPage!
     tracing(id: String): Tracing!
+    
     tracingsPage(filters: [FilterInput!]): TracingQueryPage
+    
+    queryData(filters: [FilterInput!]): QueryOutput
+    
     tracingNodePage(page: PageInput): NodePage
     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
+    
     brainCompartmentContents: [BrainCompartmentContent!]!
+    
     untransformedSwc: [SwcTracing!]!
     
     systemMessage: String
