@@ -134,6 +134,9 @@ const resolvers = {
         reapplyTransform(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITransformResult> {
             return context.reapplyTransform(args.id);
         },
+        reapplyTransforms(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITransformResult> {
+            return context.reapplyTransforms();
+        },
 
         deleteTracings(_, args: ITracingIdsArguments, context: IGraphQLServerContext): Promise<IDeleteTracingOutput[]> {
             return context.deleteTracings(args.tracingIds);

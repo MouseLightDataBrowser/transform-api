@@ -141,6 +141,7 @@ export interface IGraphQLServerContext {
     applyTransform(swcTracingId: string): Promise<ITransformResult>;
 
     reapplyTransform(tracingId: string): Promise<ITransformResult>;
+    reapplyTransforms(): Promise<ITransformResult>;
 
     deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]>;
 
@@ -506,6 +507,27 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         pubSub.publish("transformApplied", swcTracing);
 
         return result;
+    }
+
+    private applyNextTransform(all: string[]) {
+        if (all.length > 0) {
+            setTimeout(async () => {
+                const id = all.pop();
+
+                await this.reapplyTransform(id);
+
+                this.applyNextTransform(all);
+
+            }, 1000);
+        }
+    }
+
+    public async reapplyTransforms(tracingId: string): Promise<ITransformResult> {
+        const allTracingIds = (await this._storageManager.Tracings.findAll({attributes: ["id"]})).map(t => t.id);
+
+        this.applyNextTransform(allTracingIds);
+
+        return {tracing: null, errors: []};
     }
 
     public async reapplyTransform(tracingId: string): Promise<ITransformResult> {
