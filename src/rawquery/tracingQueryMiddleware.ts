@@ -15,7 +15,12 @@ export async function tracingQueryMiddleware(req, res) {
             include: [{model: PersistentStorageManager.Instance().Nodes, as: "nodes"}]
         });
     } else {
-        tracings = await PersistentStorageManager.Instance().Tracings.findAll({include: [{model: PersistentStorageManager.Instance().Nodes, as: "nodes"}]});
+        tracings = await PersistentStorageManager.Instance().Tracings.findAll({
+            include: [{
+                model: PersistentStorageManager.Instance().Nodes,
+                as: "nodes"
+            }]
+        });
     }
 
     const te1 = process.hrtime(ts1);
@@ -24,7 +29,17 @@ export async function tracingQueryMiddleware(req, res) {
 
     tracings = tracings.map(t => {
         const obj = Object.assign({}, {id: t.id, nodes: []});
-        obj.nodes = t.nodes.map(n => Object.assign({}, {id: n.id, x: n.x, y: n.y, z: n.z, radius: n.radius, parentNumber: n.parentNumber, sampleNumber: n.sampleNumber}));
+        obj.nodes = t.nodes.map(n => Object.assign({}, {
+            id: n.id,
+            x: n.x,
+            y: n.y,
+            z: n.z,
+            radius: n.radius,
+            parentNumber: n.parentNumber,
+            sampleNumber: n.sampleNumber
+            // brainAreaId: n.brainAreaId,
+            // structureIdentifierId: n.structureIdentifierId
+        }));
 
         return obj;
     });
@@ -33,17 +48,30 @@ export async function tracingQueryMiddleware(req, res) {
 
     const te0 = process.hrtime(ts0);
 
-    res.json({
-        tracings,
-        timing: {
-            sent: Date.now().valueOf(),
-            total: convertTiming(te0),
-            load: convertTiming(te1),
-            map: convertTiming(te2)
-        }
-    });
+    try {
+        res.json({
+            tracings,
+            timing: {
+                sent: Date.now().valueOf(),
+                total: convertTiming(te0),
+                load: convertTiming(te1),
+                map: convertTiming(te2)
+            }
+        });
+    } catch (err) {
+        console.log(err);
+        res.json({
+            tracings: [],
+            timing: {
+                sent: Date.now().valueOf(),
+                total: convertTiming(te0),
+                load: convertTiming(te1),
+                map: convertTiming(te2)
+            }
+        });
+    }
 }
 
 function convertTiming(duration: [number, number]) {
-    return duration[0] + duration[1]/1000000000
+    return duration[0] + duration[1] / 1000000000
 }

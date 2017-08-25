@@ -522,7 +522,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         }
     }
 
-    public async reapplyTransforms(tracingId: string): Promise<ITransformResult> {
+    public async reapplyTransforms(): Promise<ITransformResult> {
         const allTracingIds = (await this._storageManager.Tracings.findAll({attributes: ["id"]})).map(t => t.id);
 
         this.applyNextTransform(allTracingIds);
