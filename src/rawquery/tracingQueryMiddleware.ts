@@ -36,9 +36,9 @@ export async function tracingQueryMiddleware(req, res) {
             z: n.z,
             radius: n.radius,
             parentNumber: n.parentNumber,
-            sampleNumber: n.sampleNumber
-            // brainAreaId: n.brainAreaId,
-            // structureIdentifierId: n.structureIdentifierId
+            sampleNumber: n.sampleNumber,
+            brainAreaId: n.brainAreaId,
+            structureIdentifierId: n.structureIdentifierId
         }));
 
         return obj;
