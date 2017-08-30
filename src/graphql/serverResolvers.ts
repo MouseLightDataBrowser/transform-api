@@ -160,15 +160,6 @@ const resolvers = {
             return true;
         }
     },
-    Subscription: {
-        transformApplied(payload: ISwcTracing): ISwcTracing {
-            try {
-                return payload;
-            } catch (err) {
-                debug(err);
-            }
-        }
-    },
     Tracing: {
         swcTracing(tracing: ITracing, _, context: IGraphQLServerContext): Promise<ISwcTracing> {
             return context.getSwcTracing(tracing.swcTracingId);

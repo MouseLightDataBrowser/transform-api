@@ -2,7 +2,6 @@ import * as path from "path";
 import {operatorIdValueMap} from "../models/search/queryOperator";
 
 const _ = require("lodash");
-import {PubSub} from "graphql-subscriptions";
 import {FindOptions} from "sequelize";
 import * as DataLoader from "dataloader";
 
@@ -22,8 +21,6 @@ import {IPageInput} from "./interfaces/page";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
 import {isNullOrUndefined} from "util";
-
-export const pubSub = new PubSub();
 
 export interface ITracingsQueryInput {
     offset?: number;
@@ -504,8 +501,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
         const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
 
-        pubSub.publish("transformApplied", swcTracing);
-
         return result;
     }
 
@@ -547,8 +542,6 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             }
 
             const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
-
-            pubSub.publish("transformApplied", swcTracing);
 
             return result;
         }

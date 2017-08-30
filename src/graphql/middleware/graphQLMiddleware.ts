@@ -1,15 +1,7 @@
 import {graphqlExpress, graphiqlExpress} from "graphql-server-express";
-import {SubscriptionManager} from "graphql-subscriptions";
-import {SubscriptionServer} from "subscriptions-transport-ws";
 
 import {schema} from "./schema";
-import {GraphQLServerContext, pubSub} from "../serverContext";
-
-const subscriptionManager = new SubscriptionManager({
-    schema: schema,
-    pubsub: pubSub,
-    setupFunctions: {}
-});
+import {GraphQLServerContext} from "../serverContext";
 
 export function graphQLMiddleware() {
     return graphqlExpress(graphqlRequestHandler);
@@ -17,15 +9,6 @@ export function graphQLMiddleware() {
 
 export function graphiQLMiddleware(configuration) {
     return graphiqlExpress({endpointURL: configuration.graphQlEndpoint});
-}
-
-export function graphQLSubscriptions(server) {
-    new SubscriptionServer({
-        subscriptionManager: subscriptionManager
-    }, {
-        server: server,
-        path: "/subscriptions"
-    });
 }
 
 function graphqlRequestHandler(req) {
@@ -43,6 +26,6 @@ function graphqlRequestHandler(req) {
     return {
         schema: schema,
         context: appContext,
-        rootValue: {}
+        rootValue: { }
     };
 }

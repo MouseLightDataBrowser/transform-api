@@ -269,14 +269,9 @@ type Mutation {
    clearSystemMessage: Boolean
 }
 
-type Subscription {
-    transformApplied: SwcTracing
-}
-
 schema {
   query: Query
   mutation: Mutation
-  subscription: Subscription
 }`;
 
 export default typeDefinitions;

@@ -4,7 +4,8 @@
     "module": "commonjs",
     "target": "es6",
     "sourceMap": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true
   },
   "include": [
     "src/**/*.ts",
