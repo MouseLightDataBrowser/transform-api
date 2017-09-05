@@ -50,7 +50,7 @@ export interface ITracingCompartmentOutput {
     compartments: IBrainCompartment[];
 }
 
-export interface ITracingQueryPage {
+export interface ICompartmentQueryOutputPage {
     tracings: ITracingCompartmentOutput[];
     totalCount: number;
     queryTime: number;
@@ -104,7 +104,7 @@ export interface IGraphQLServerContext {
 
     getTracing(id: string): Promise<ITracing>;
 
-    getTracingsWithFilters(filters: IFilterInput[]): Promise<ITracingQueryPage>;
+    getCompartmentsWithFilters(filters: IFilterInput[]): Promise<ICompartmentQueryOutputPage>;
 
     getNeuronsWithFilters(filters: IFilterInput[]): Promise<IQueryDataPage>;
 
@@ -309,9 +309,9 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.Tracings.findById(id);
     }
 
-    public async getTracingsWithFilters(filters: IFilterInput[]): Promise<ITracingQueryPage> {
+    public async getCompartmentsWithFilters(filters: IFilterInput[]): Promise<ICompartmentQueryOutputPage> {
         try {
-            const {compartments, duration} = await this.performFilterQuery(filters);
+            const {compartments, duration} = await this.performCompartmentsFilterQuery(filters);
 
             // Reverse relationship and list applicable compartments under tracings.
             let tracingMap = new Map<string, ITracingCompartmentOutput>();
@@ -345,17 +345,21 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getNeuronsWithFilters(filters: IFilterInput[]): Promise<IQueryDataPage> {
         try {
-            const {compartments, duration} = await this.performFilterQuery(filters);
+            // const {compartments, duration} = await this.performCompartmentsFilterQuery(filters);
+
+            let {tracings, duration} = await this.performNeuronsFilterQuery(filters);
+
 
             // Not interested in individual compartment results.  Just want unique tracings mapped back to neurons for
             // grouping.
 
-            const tracings = _.uniqBy(compartments.map(c => c.Tracing), "id");
+            tracings = _.uniqBy(tracings, "id");
 
             const swcTracings = await this._storageManager.SwcTracings.findAll({where: {id: {$in: tracings.map(t => t.swcTracingId)}}});
             const swcTracingLookup = swcTracings.map(s => s.id);
 
             let neurons = await this._storageManager.Neurons.findAll({where: {id: {$in: swcTracings.map(s => s.neuronId)}}});
+
             const neuronLookup = neurons.map(n => n.id);
 
             tracings.map(t => {
@@ -400,7 +404,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async getSoma(tracing: ITracing): Promise<ITracingNode> {
-        return await this._storageManager.Nodes.findOne({where: {structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma), tracingId: tracing.id}});
+        return await this._storageManager.Nodes.findOne({
+            where: {
+                structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma),
+                tracingId: tracing.id
+            }
+        });
     }
 
     public async getTracingStructure(tracing: ITracing): Promise<ITracingStructure> {
@@ -688,112 +697,187 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return Promise.all(promises);
     }
 
-    private async performFilterQuery(filters: IFilterInput[]) {
+    private async queryForCompartmentFilter(filter: IFilterInput) {
+        let query: FindOptions = {
+            where: {},
+            include: [this._storageManager.Tracings]
+        };
+
+        let swcStructureMatchIds = [];
+
+        // Zero means any, two is explicitly both types - either way, do not need to filter on structure id
+        if (filter.tracingStructureIds.length === 1) {
+            swcStructureMatchIds = (await this._storageManager.SwcTracings.findAll({
+                attributes: ["id"],
+                where: {tracingStructureId: filter.tracingStructureIds[0]}
+            })).map(s => s.id);
+
+            if (swcStructureMatchIds.length === 0) {
+                // Asked for a structure type, and there are no entries of that type.  Unlikely except before
+                // database is reasonably well populated.
+                throw("There are no tracings with the specified tracing structure");
+            }
+        }
+
+        if (swcStructureMatchIds.length > 0) {
+            query.include = [{
+                model: this._storageManager.Tracings,
+                where: {swcTracingId: {$in: swcStructureMatchIds}}
+            }];
+        }
+
+        if (filter.brainAreaIds.length > 0) {
+            // Structure paths of the selected brain areas.
+            const brainStructurePaths = (await this._storageManager.BrainAreas.findAll({
+                attributes: ["structureIdPath"],
+                where: {id: {$in: filter.brainAreaIds}}
+            })).map(o => o.structureIdPath + "%");
+
+            // Find all brain areas that are these or children of in terms of structure path.
+            const comprehensiveBrainAreaObjs = (await this._storageManager.BrainAreas.findAll({
+                attributes: ["id", "structureIdPath"],
+                where: {structureIdPath: {$like: {$any: brainStructurePaths}}}
+            }));
+
+            const comprehensiveBrainAreaIds = comprehensiveBrainAreaObjs.map(o => o.id);
+
+            query.where["brainAreaId"] = {
+                $in: comprehensiveBrainAreaIds
+            };
+        }
+
+        let opCode = null;
+        let amount = 0;
+
+        if (filter.operatorId && filter.operatorId.length > 0) {
+            const operator = operatorIdValueMap().get(filter.operatorId);
+            if (operator) {
+                opCode = operator.operator;
+            }
+            amount = filter.amount;
+            debug(`found operator ${operator} with opCode ${opCode} for amount ${amount}`);
+        } else {
+            opCode = "$gt";
+            amount = 0;
+            debug(`operator is null, using opCode ${opCode} for amount ${amount}`);
+        }
+
+        if (opCode) {
+            if (filter.nodeStructureIds.length > 1) {
+                let subQ = filter.nodeStructureIds.map(s => {
+                    const columnName = this._storageManager.StructureIdentifiers.countColumnName(s);
+
+                    if (columnName) {
+                        let obj = {};
+
+                        obj[columnName] = createOperator(opCode, amount);
+
+                        return obj;
+                    }
+
+                    debug(`Failed to identify column name for count of structure id ${s}`);
+
+                    return null;
+                }).filter(q => q !== null);
+
+                if (subQ.length > 0) {
+                    query.where["$or"] = subQ;
+                }
+            } else if (filter.nodeStructureIds.length > 0) {
+                const columnName = this._storageManager.StructureIdentifiers.countColumnName(filter.nodeStructureIds[0]);
+
+                if (columnName) {
+                    query.where[columnName] = createOperator(opCode, amount);
+                } else {
+                    debug(`Failed to identify column name for count of structure id ${filter.nodeStructureIds[0]}`);
+                }
+            } else {
+                query.where["nodeCount"] = createOperator(opCode, amount);
+            }
+        } else {
+            // TODO return error
+            debug("failed to find operator");
+        }
+
+        return query;
+    }
+
+    private async performNeuronsFilterQuery(filters: IFilterInput[]) {
         const start = Date.now();
 
         const promises = filters.map(async (filter) => {
-            let query: FindOptions = {
-                where: {},
-                include: [this._storageManager.Tracings]
-            };
+            return this.queryForCompartmentFilter(filter);
+        });
 
-            let swcStructureMatchIds = [];
+        const queries = await Promise.all(promises);
 
-            // Zero means any, two is explicitly both types - either way, do not need to filter on structure id
-            if (filter.tracingStructureIds.length === 1) {
-                swcStructureMatchIds = (await this._storageManager.SwcTracings.findAll({
-                    attributes: ["id"],
-                    where: {tracingStructureId: filter.tracingStructureIds[0]}
-                })).map(s => s.id);
+        const resultPromises = queries.map(async (query) => {
+            return this._storageManager.BrainCompartment.findAll(query);
+        });
 
-                if (swcStructureMatchIds.length === 0) {
-                    // Asked for a structure type, and there are no entries of that type.  Unlikely except before
-                    // database is reasonably well populated.
-                    throw("There are no tracings with the specified tracing structure");
-                }
-            }
+        // An array (one for each filter entry) of an array of compartments (all returned for each filter).
+        let results = await Promise.all(resultPromises);
 
-            if (swcStructureMatchIds.length > 0) {
-                query.include = [{
-                    model: this._storageManager.Tracings,
-                    where: {swcTracingId: {$in: swcStructureMatchIds}}
-                }];
-            }
+        const refinedQueryPromises = results.map(async (compartmentList, index) => {
+            const tracings = _.uniq(compartmentList.map(c => c.Tracing));
 
-            if (filter.brainAreaIds.length > 0) {
-                // Structure paths of the selected brain areas.
-                const brainStructurePaths = (await this._storageManager.BrainAreas.findAll({
-                    attributes: ["structureIdPath"],
-                    where: {id: {$in: filter.brainAreaIds}}
-                })).map(o => o.structureIdPath + "%");
-
-                // Find all brain areas that are these or children of in terms of structure path.
-                const comprehensiveBrainAreaObjs = (await this._storageManager.BrainAreas.findAll({
-                    attributes: ["id", "structureIdPath"],
-                    where: {structureIdPath: {$like: {$any: brainStructurePaths}}}
-                }));
-
-                const comprehensiveBrainAreaIds = comprehensiveBrainAreaObjs.map(o => o.id);
-
-                query.where["brainAreaId"] = {
-                    $in: comprehensiveBrainAreaIds
-                };
-            }
-
-            let opCode = null;
-            let amount = 0;
-
-            if (filter.operatorId && filter.operatorId.length > 0) {
-                const operator = operatorIdValueMap().get(filter.operatorId);
-                if (operator) {
-                    opCode = operator.operator;
-                }
-                amount = filter.amount;
-                debug(`found operator ${operator} with opCode ${opCode} for amount ${amount}`);
+            if (!filters[index].arbCenter || !filters[index].arbSize) {
+                return tracings;
             } else {
-                opCode = "$gt";
-                amount = 0;
-                debug(`operator is null, using opCode ${opCode} for amount ${amount}`);
-            }
-
-            if (opCode) {
-                if (filter.nodeStructureIds.length > 1) {
-                    let subQ = filter.nodeStructureIds.map(s => {
-                        const columnName = this._storageManager.StructureIdentifiers.countColumnName(s);
-
-                        if (columnName) {
-                            let obj = {};
-
-                            obj[columnName] = createOperator(opCode, amount);
-
-                            return obj;
+                const somaPromises: [Promise<ITracingNode>] = tracings.map(async (tracing) => {
+                    return this._storageManager.Nodes.findOne({
+                        where: {
+                            structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma),
+                            tracingId: tracing.id
                         }
+                    });
+                });
 
-                        debug(`Failed to identify column name for count of structure id ${s}`);
+                const somas: ITracingNode[] = await Promise.all(somaPromises);
 
-                        return null;
-                    }).filter(q => q !== null);
+                const pos = filters[index].arbCenter;
 
-                    if (subQ.length > 0) {
-                        query.where["$or"] = subQ;
-                    }
-                } else if (filter.nodeStructureIds.length > 0) {
-                    const columnName = this._storageManager.StructureIdentifiers.countColumnName(filter.nodeStructureIds[0]);
+                return tracings.filter((tracing, index) => {
+                    const soma = somas[index];
 
-                    if (columnName) {
-                        query.where[columnName] = createOperator(opCode, amount);
-                    } else {
-                        debug(`Failed to identify column name for count of structure id ${filter.nodeStructureIds[0]}`);
-                    }
-                } else {
-                    query.where["nodeCount"] = createOperator(opCode, amount);
-                }
-            } else {
-                // TODO return error
-                debug("failed to find operator");
+                    const distance = Math.sqrt(Math.pow(pos.x - soma.x, 2) + Math.pow(pos.y - soma.y, 2) + Math.pow(pos.z - soma.z, 2));
+
+                    return distance <= filters[index].arbSize;
+                })
             }
+        });
 
-            return query;
+        results = await Promise.all(refinedQueryPromises);
+
+        let tracings = results.reduce((prev, curr, index) => {
+            const all = _.uniqBy(prev.concat(curr), "id");
+
+            if (index === 0 || filters[index].composition === FilterComposition.or) {
+                return all;
+            } else {
+                const tracingA = prev.map(p => p.tracingId);
+                const tracingB = curr.map(c => c.tracingId);
+
+                const validIds = _.intersection(tracingA, tracingB);
+
+                return all.filter(a => {
+                    return validIds.includes(a.tracingId);
+                });
+            }
+        }, []);
+
+        const duration = Date.now() - start;
+
+        await this.logQueries(filters, queries, duration);
+
+        return {tracings, duration};
+    }
+
+    private async performCompartmentsFilterQuery(filters: IFilterInput[]) {
+        const start = Date.now();
+
+        const promises = filters.map(async (filter) => {
+            return this.queryForCompartmentFilter(filter);
         });
 
         const queries = await Promise.all(promises);
@@ -838,7 +922,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     private async logQueries(filters: IFilterInput[], queries: FindOptions[], duration) {
         // Fixes json -> string for model circular reference when logging.
-        const queryLog = queries.map(q => {
+        const queryLog = queries ? queries.map(q => {
             let ql = {where: q.where};
             if (q.include) {
                 const include: any = q.include[0];
@@ -849,13 +933,9 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 }];
             }
             return ql;
-        });
+        }) : [{}];
 
-        let queryLogs = [];
-
-        queryLogs.push(queryLog);
-
-        await this._storageManager.logQuery(filters, queryLogs, "", duration);
+        await this._storageManager.logQuery(filters, [queryLog], "", duration);
     }
 }
 

@@ -1,6 +1,6 @@
 import {
     IDeleteTracingOutput, IGraphQLServerContext, IQueryDataPage, IRequestExportOutput, ITracingPage,
-    ITracingQueryPage,
+    ICompartmentQueryOutputPage,
     ITracingsQueryInput
 } from "./serverContext";
 
@@ -42,12 +42,20 @@ interface ITracingNodesArguments {
     brainAreaIds: string[];
 }
 
+interface IPosition {
+    x: number;
+    y: number;
+    z: number;
+}
+
 export interface IFilterInput {
     tracingStructureIds: string[];
     nodeStructureIds: string[];
     operatorId: string;
     amount: number;
     brainAreaIds: string[];
+    arbCenter: IPosition;
+    arbSize: number;
     invert: boolean;
     composition: number;
 }
@@ -96,9 +104,9 @@ const resolvers = {
         tracing(_, args: IIdOnlyArguments, context: IGraphQLServerContext): Promise<ITracing> {
             return context.getTracing(args.id);
         },
-        tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<ITracingQueryPage> {
+        tracingsPage(_, args: ITracingsPageArguments, context: IGraphQLServerContext): Promise<ICompartmentQueryOutputPage> {
             try {
-                return context.getTracingsWithFilters(args.filters || []);
+                return context.getCompartmentsWithFilters(args.filters || []);
             } catch (err) {
                 debug(err);
             }
