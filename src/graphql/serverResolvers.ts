@@ -176,6 +176,9 @@ const resolvers = {
         firstNode(tracing, _, context: IGraphQLServerContext): Promise<ITracingNode> {
             return context.getFirstTracingNode(tracing);
         },
+        soma(tracing, _, context: IGraphQLServerContext): Promise<ITracingNode> {
+            return context.getSoma(tracing);
+        },
         nodes(tracing: ITracing, args: ITracingNodesArguments, context: IGraphQLServerContext): Promise<ITracingNode[]> {
             return context.getNodes(tracing, args.brainAreaIds);
         },

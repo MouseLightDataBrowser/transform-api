@@ -98,6 +98,7 @@ type Tracing {
     transformedAt: Float
     transformStatus: TransformStatus
     firstNode: Node
+    soma: Node
     swcTracing: SwcTracing  
     registrationTransform: RegistrationTransform
     tracingStructure: TracingStructure
@@ -121,7 +122,9 @@ type Node {
     parentNumber: Int
     lengthToParent: Float
     brainArea: BrainArea
+    brainAreaId: String
     structureIdentifier: StructureIdentifier
+    structureIdentifierId: String
     structureIdValue: Int
     swcNode: SwcNode
     createdAt: Float
@@ -201,6 +204,12 @@ type RequestExportOutput {
     contents: String
 }
 
+input InputPosition {
+    x: Float
+    y: Float
+    z: Float
+}
+
 input TracingsQueryInput {
     offset: Int
     limit: Int
@@ -218,11 +227,13 @@ input PageInput {
 }
 
 input FilterInput {
+    brainAreaIds: [String!]
+    arbCenter: InputPosition
+    arbSize: Float
     tracingStructureIds: [String!]
     nodeStructureIds: [String!]
     operatorId: String
     amount: Float
-    brainAreaIds: [String!]
     invert: Boolean
     composition: Int
     nonce: String

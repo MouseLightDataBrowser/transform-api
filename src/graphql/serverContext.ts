@@ -112,6 +112,8 @@ export interface IGraphQLServerContext {
 
     getFirstTracingNode(tracing: ITracing): Promise<ITracingNode>;
 
+    getSoma(tracing: ITracing): Promise<ITracingNode>;
+
     getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
 
     getKeyNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
@@ -395,6 +397,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getFirstTracingNode(tracing: ITracing): Promise<ITracingNode> {
         return await this._storageManager.Nodes.findOne({where: {sampleNumber: 1, tracingId: tracing.id}});
+    }
+
+    public async getSoma(tracing: ITracing): Promise<ITracingNode> {
+        return await this._storageManager.Nodes.findOne({where: {structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma), tracingId: tracing.id}});
     }
 
     public async getTracingStructure(tracing: ITracing): Promise<ITracingStructure> {
