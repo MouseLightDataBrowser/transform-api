@@ -837,8 +837,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
                 const pos = filters[index].arbCenter;
 
-                return tracings.filter((tracing, index) => {
-                    const soma = somas[index];
+                return tracings.filter((tracing, tracingIndex) => {
+                    const soma = somas[tracingIndex];
 
                     const distance = Math.sqrt(Math.pow(pos.x - soma.x, 2) + Math.pow(pos.y - soma.y, 2) + Math.pow(pos.z - soma.z, 2));
 
@@ -855,13 +855,13 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             if (index === 0 || filters[index].composition === FilterComposition.or) {
                 return all;
             } else {
-                const tracingA = prev.map(p => p.tracingId);
-                const tracingB = curr.map(c => c.tracingId);
+                const tracingA = prev.map(p => p.id);
+                const tracingB = curr.map(c => c.id);
 
                 const validIds = _.intersection(tracingA, tracingB);
 
                 return all.filter(a => {
-                    return validIds.includes(a.tracingId);
+                    return validIds.includes(a.id);
                 });
             }
         }, []);
