@@ -1,5 +1,6 @@
 import * as path from "path";
 import {operatorIdValueMap} from "../models/search/queryOperator";
+import * as Archiver from "archiver";
 
 const _ = require("lodash");
 import {FindOptions} from "sequelize";
@@ -21,6 +22,9 @@ import {IPageInput} from "./interfaces/page";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
 import {isNullOrUndefined} from "util";
+import * as fs from "fs";
+import * as sanitize from "sanitize-filename";
+import * as uuid from "uuid";
 
 export interface ITracingsQueryInput {
     offset?: number;
@@ -681,20 +685,77 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             const transform: IRegistrationTransform = await this._storageManager.RegistrationTransforms.findById(tracing.registrationTransformId);
 
+            const neuron: INeuron = await this._storageManager.Neurons.findById(swcTracing.neuronId);
+
+            const filename = sanitize(`${neuron.idString}-${path.basename(swcTracing.filename, path.extname(swcTracing.filename))}`);
+
             if (format === ExportFormat.SWC) {
                 return {
-                    contents: mapToSwc(tracing, swcTracing, transform, nodes, idFunc),
-                    filename: path.basename(swcTracing.filename, path.extname(swcTracing.filename))
+                    contents: mapToSwc(tracing, swcTracing, neuron, transform, nodes, idFunc),
+                    filename: filename
                 };
             } else {
                 return {
-                    contents: mapToJSON(tracing, swcTracing, transform, nodes, idFunc),
-                    filename: path.basename(swcTracing.filename, path.extname(swcTracing.filename))
+                    contents: mapToJSON(tracing, swcTracing, neuron, transform, nodes, idFunc),
+                    filename: filename
                 };
             }
         })));
 
-        return Promise.all(promises);
+        const data = await Promise.all(promises);
+
+        if (data.length > 1) {
+            if (format === ExportFormat.SWC) {
+                const tempFile = uuid.v4();
+
+                return new Promise<IRequestExportOutput[]>(async (resolve) => {
+                    const output = fs.createWriteStream(tempFile);
+
+                    output.on("finish", () => {
+                        const readData = fs.readFileSync(tempFile);
+
+                        const encoded = readData.toString("base64");
+
+                        fs.unlinkSync(tempFile);
+
+                        resolve([{
+                            contents: encoded,
+                            filename: "ndb-export-data.zip"
+                        }]);
+                    });
+
+                    const archive = Archiver("zip", {zlib: {level: 9}});
+
+                    archive.pipe(output);
+
+                    data.forEach(d => {
+                        archive.append(d.contents, {name: d.filename + ".swc"});
+                    });
+
+                    await archive.finalize();
+                });
+
+            } else {
+                const obj = data.reduce((prev: any, d) => {
+                    prev[d.filename] = d.contents;
+
+                    return prev;
+                }, {});
+
+                return [{
+                    contents: JSON.stringify(obj),
+                    filename: "ndb-export-data.json"
+                }]
+            }
+        } else {
+            data[0].filename += format === ExportFormat.SWC ? ".swc" : ".json";
+
+            if (format === ExportFormat.JSON) {
+                data[0].contents = JSON.stringify(data[0].contents)
+            }
+
+            return data;
+        }
     }
 
     private async queryForCompartmentFilter(filter: IFilterInput) {
@@ -939,10 +1000,11 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 }
 
-function mapToSwc(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): string {
+function mapToSwc(tracing: ITracing, swcTracing: ISwcTracing, neuron: INeuron, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): string {
     const header = `# Registered tracing exported from Mouse Light neuron data browser.\n`
         + `# Exported: ${(new Date()).toUTCString()}\n`
-        + `# Source: ${swcTracing.filename}\n`
+        + `# SourceFile: ${swcTracing.filename}\n`
+        + `# Neuron Id: ${neuron.idString}\n`
         + `# Transform: ${transform.location}\n`
         + `# Transformed: ${(new Date(tracing.transformedAt)).toUTCString()}\n`;
 
@@ -951,11 +1013,12 @@ function mapToSwc(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegist
     }, header);
 }
 
-function mapToJSON(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): string {
+function mapToJSON(tracing: ITracing, swcTracing: ISwcTracing, neuron: INeuron, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): any {
     const obj = {
         info: {
             exported: (new Date()).toUTCString(),
-            source: swcTracing.filename,
+            sourceFile: swcTracing.filename,
+            neuronId: neuron.idString,
             transform: transform.location,
             transformed: (new Date(tracing.transformedAt)).toUTCString()
         },
@@ -974,7 +1037,7 @@ function mapToJSON(tracing: ITracing, swcTracing: ISwcTracing, transform: IRegis
         }
     });
 
-    return JSON.stringify(obj);
+    return obj;
 }
 
 function createDeletedTracingOutput(id: string, swcTracingId: string, error = null): IDeleteTracingOutput {
@@ -987,4 +1050,3 @@ function createOperator(operator: string, amount: number) {
 
     return obj;
 }
-
