@@ -76,7 +76,8 @@ export interface IRequestExportOutput {
 export enum FilterComposition {
     none = 0,
     and = 1,
-    or = 2
+    or = 2,
+    not = 3
 }
 
 export interface IGraphQLServerContext {
@@ -880,7 +881,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         let results = await Promise.all(resultPromises);
 
         const refinedQueryPromises = results.map(async (compartmentList, index) => {
-            const tracings = _.uniq(compartmentList.map(c => c.Tracing));
+            const tracings = _.uniqBy(compartmentList.map(c => c.Tracing), "id");
 
             if (!filters[index].arbCenter || !filters[index].arbSize) {
                 return tracings;
@@ -911,11 +912,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         results = await Promise.all(refinedQueryPromises);
 
         let tracings = results.reduce((prev, curr, index) => {
-            const all = _.uniqBy(prev.concat(curr), "id");
+            // const all = _.uniqBy(prev.concat(curr), "id");
 
             if (index === 0 || filters[index].composition === FilterComposition.or) {
-                return all;
-            } else {
+                return _.uniqBy(prev.concat(curr), "id");
+            } else if  (filters[index].composition === FilterComposition.and) {
+                /*
                 const tracingA = prev.map(p => p.id);
                 const tracingB = curr.map(c => c.id);
 
@@ -924,6 +926,11 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 return all.filter(a => {
                     return validIds.includes(a.id);
                 });
+                */
+                return _.uniqBy(_.intersectionBy(prev, curr, "id"), "id");
+            } else {
+                // Not
+                return _.uniqBy(_.differenceBy(prev, curr, "id"), "id");
             }
         }, []);
 
