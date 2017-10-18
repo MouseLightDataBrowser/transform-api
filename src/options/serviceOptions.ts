@@ -1,6 +1,9 @@
+import * as fs from "fs";
+
 import {IConnectionOptions} from "ndb-data-models";
 
 import {Databases} from "./databaseOptions";
+import * as path from "path";
 
 export interface IServerOptions {
     port: number;
@@ -21,11 +24,12 @@ export interface IServiceOptions {
     ontologyPath: string;
     serverOptions: IServerOptions;
     databaseOptions: IDataBaseOptions;
+    release: string;
+    version: string;
 }
 
 interface IConfiguration<T> {
     development: T;
-    test: T;
     production: T;
 }
 
@@ -43,22 +47,9 @@ const configurations: IConfiguration<IServiceOptions> = {
             swc: null,
             transform: null,
             metrics: null
-        }
-    },
-    test: {
-        envName: "",
-        ontologyPath: "/groups/mousebrainmicro/mousebrainmicro/registration/Allen Atlas/OntologyAtlas.h5",
-        serverOptions: {
-            port: 9661,
-            graphQlEndpoint: "/graphql",
-            graphiQlEndpoint: "/graphiql"
         },
-        databaseOptions: {
-            sample: null,
-            swc: null,
-            transform: null,
-            metrics: null
-        }
+        release: "internal",
+        version: ""
     },
     production: {
         envName: "",
@@ -73,7 +64,9 @@ const configurations: IConfiguration<IServiceOptions> = {
             swc: null,
             transform: null,
             metrics: null
-        }
+        },
+        release: "public",
+        version: ""
     }
 };
 
@@ -86,21 +79,28 @@ function loadConfiguration(): IServiceOptions {
 
     c.ontologyPath = process.env.ONTOLOGY_PATH || c.ontologyPath;
 
+    c.release =  process.env.NEURON_EXPLORER_RELEASE || c.release;
+
+    c.version = readSystemVersion();
+
     const dbEnvName = process.env.DATABASE_ENV || envName;
 
     c.databaseOptions.sample = Databases.sample[dbEnvName];
     c.databaseOptions.sample.host = process.env.SAMPLE_DB_HOST || c.databaseOptions.sample.host;
     c.databaseOptions.sample.port = process.env.SAMPLE_DB_PORT || c.databaseOptions.sample.port;
+    c.databaseOptions.sample.user = process.env.DATABASE_USER || c.databaseOptions.sample.user;
     c.databaseOptions.sample.password = process.env.DATABASE_PW || "pgsecret";
 
     c.databaseOptions.swc = Databases.swc[dbEnvName];
     c.databaseOptions.swc.host = process.env.SWC_DB_HOST || c.databaseOptions.swc.host;
     c.databaseOptions.swc.port = process.env.SWC_DB_PORT || c.databaseOptions.swc.port;
+    c.databaseOptions.swc.user = process.env.DATABASE_USER || c.databaseOptions.swc.user;
     c.databaseOptions.swc.password = process.env.DATABASE_PW || "pgsecret";
 
     c.databaseOptions.transform = Databases.transform[dbEnvName];
     c.databaseOptions.transform.host = process.env.TRANSFORM_DB_HOST || c.databaseOptions.transform.host;
     c.databaseOptions.transform.port = process.env.TRANSFORM_DB_PORT || c.databaseOptions.transform.port;
+    c.databaseOptions.transform.user = process.env.DATABASE_USER || c.databaseOptions.transform.user;
     c.databaseOptions.transform.password = process.env.DATABASE_PW || "pgsecret";
 
     c.databaseOptions.metrics = Databases.metrics[dbEnvName];
@@ -117,3 +117,13 @@ function loadConfiguration(): IServiceOptions {
 export const ServiceOptions: IServiceOptions = loadConfiguration();
 
 export const DatabaseOptions: IDataBaseOptions = ServiceOptions.databaseOptions;
+
+function readSystemVersion(): string {
+    try {
+        const contents = JSON.parse(fs.readFileSync(path.resolve("package.json")).toString());
+        return contents.version;
+    } catch (err) {
+        console.log(err);
+        return "";
+    }
+}

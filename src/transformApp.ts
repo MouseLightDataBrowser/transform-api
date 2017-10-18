@@ -67,7 +67,7 @@ app.use(bodyParser.json());
 app.use(session({
     store: new SqliteStore,
     secret: sessionSecret,
-    cookie: {maxAge: 1000},
+    cookie: {maxAge: 86400},
     resave: false,
     saveUninitialized: false
 }));

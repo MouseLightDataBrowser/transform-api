@@ -9,7 +9,6 @@ export interface IDatabases {
 
 export interface IDatabaseEnv {
     development: IConnectionOptions;
-    test: IConnectionOptions;
     azure?: IConnectionOptions;
     production: IConnectionOptions;
 }
@@ -24,19 +23,11 @@ export const Databases: IDatabases = {
             dialect: "postgres",
             logging: null
         },
-        test: {
-            database: "samples_test",
-            username: "postgres",
-            host: "sample-db",
-            port: 5432,
-            dialect: "postgres",
-            logging: null
-        },
         azure: {
             database: "jrcndb",
-            username: "JaNEadmin",
+            username: "",
             password: "",
-            host: "jrcndb.database.windows.net",
+            host: "",
             dialect: "mssql",
             dialectOptions: {
                 encrypt: true,
@@ -62,19 +53,11 @@ export const Databases: IDatabases = {
             dialect: "postgres",
             logging: null
         },
-        test: {
-            database: "swc_test",
-            username: "postgres",
-            host: "swc-db",
-            port: 5432,
-            dialect: "postgres",
-            logging: null
-        },
         azure: {
             database: "jrcndb",
-            username: "JaNEadmin",
+            username: "",
             password: "",
-            host: "jrcndb.database.windows.net",
+            host: "",
             dialect: "mssql",
             dialectOptions: {
                 encrypt: true,
@@ -100,19 +83,11 @@ export const Databases: IDatabases = {
             dialect: "postgres",
             logging: null
         },
-        test: {
-            database: "transform_test",
-            username: "postgres",
-            host: "transform-db",
-            port: 5432,
-            dialect: "postgres",
-            logging: null
-        },
         azure: {
             database: "jrcndb",
-            username: "JaNEadmin",
+            username: "",
             password: "",
-            host: "jrcndb.database.windows.net",
+            host: "",
             dialect: "mssql",
             dialectOptions: {
                 encrypt: true,
@@ -132,11 +107,6 @@ export const Databases: IDatabases = {
     metrics: {
         development: {
             host: "localhost",
-            port: 8086,
-            database: "query_metrics_db"
-        },
-        test: {
-            host: "metrics-db",
             port: 8086,
             database: "query_metrics_db"
         },

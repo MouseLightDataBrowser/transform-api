@@ -17,6 +17,7 @@ import {IPageInput} from "./interfaces/page";
 import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
 import {IQueryOperator, operators} from "../models/search/queryOperator";
 import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
+import {ServiceOptions} from "../options/serviceOptions";
 
 interface IIdOnlyArguments {
     id: string;
@@ -80,6 +81,9 @@ interface IRequestExportArguments {
 
 const resolvers = {
     Query: {
+        systemSettings(_, __, ___): any {
+            return getSystemSettings();
+        },
         queryOperators(_, __, ___): IQueryOperator[] {
             return operators;
         },
@@ -243,3 +247,10 @@ const resolvers = {
 let systemMessage: String = "";
 
 export default resolvers;
+
+function getSystemSettings() {
+    return {
+        version: ServiceOptions.version,
+        release: ServiceOptions.release
+    }
+}

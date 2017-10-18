@@ -1,4 +1,9 @@
 let typeDefinitions = `
+type SystemSettings {
+    version: String
+    release: String
+}
+
 type QueryOperator {
     id: String
     display: String
@@ -240,6 +245,8 @@ input FilterInput {
 }
 
 type Query {
+    systemSettings: SystemSettings
+    
     queryOperators: [QueryOperator!]!
     brainAreas: [BrainArea!]!
     structureIdentifiers: [StructureIdentifier!]!
