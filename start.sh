@@ -2,4 +2,6 @@
 
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
-npm run dev
+export NODE_ENV=production
+
+npm run start

@@ -1,6 +1,7 @@
 import {createServer} from "http";
 import * as express from "express";
 import * as bodyParser from "body-parser";
+import * as compression from "compression";
 
 const session = require("express-session");
 const sessionSecret = require("./secrets");
@@ -60,6 +61,8 @@ const app = express();
 app.use(bodyParser.urlencoded({extended: true}));
 
 app.use(bodyParser.json());
+
+// app.use(compression);
 
 app.use(session({
     store: new SqliteStore,

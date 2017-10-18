@@ -74,7 +74,6 @@ export interface IRequestExportOutput {
 }
 
 export enum FilterComposition {
-    none = 0,
     and = 1,
     or = 2,
     not = 3
