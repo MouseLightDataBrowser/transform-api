@@ -350,36 +350,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
     public async getNeuronsWithFilters(filters: IFilterInput[]): Promise<IQueryDataPage> {
         try {
-            // const {compartments, duration} = await this.performCompartmentsFilterQuery(filters);
-
-            let {tracings, duration} = await this.performNeuronsFilterQuery(filters);
-
-
-            // Not interested in individual compartment results.  Just want unique tracings mapped back to neurons for
-            // grouping.
-
-            tracings = _.uniqBy(tracings, "id");
-
-            const swcTracings = await this._storageManager.SwcTracings.findAll({where: {id: {$in: tracings.map(t => t.swcTracingId)}}});
-            const swcTracingLookup = swcTracings.map(s => s.id);
-
-            let neurons = await this._storageManager.Neurons.findAll({where: {id: {$in: swcTracings.map(s => s.neuronId)}}});
-
-            const neuronLookup = neurons.map(n => n.id);
-
-            tracings.map(t => {
-                const sIdx = swcTracingLookup.indexOf(t.swcTracingId);
-                const swcTracing = swcTracings[sIdx];
-
-                const nIdx = neuronLookup.indexOf(swcTracing.neuronId);
-                const neuron = neurons[nIdx];
-
-                if (isNullOrUndefined(neuron.tracings)) {
-                    neuron.tracings = [];
-                }
-
-                neuron.tracings.push(t);
-            });
+            let {neurons, duration} = await this.performNeuronsFilterQuery(filters);
 
             await Promise.all(neurons.map(async (n) => {
                 if (n.brainAreaId) {
@@ -880,12 +851,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         // An array (one for each filter entry) of an array of compartments (all returned for each filter).
         let results = await Promise.all(resultPromises);
 
+        // Not interested in individual compartment results.  Just want unique tracings mapped back to neurons for
+        // grouping.  Need to reorg by neurons before applying composition.
         const refinedQueryPromises = results.map(async (compartmentList, index) => {
-            const tracings = _.uniqBy(compartmentList.map(c => c.Tracing), "id");
+            let tracings = _.uniqBy(compartmentList.map(c => c.Tracing), "id");
 
-            if (!filters[index].arbCenter || !filters[index].arbSize) {
-                return tracings;
-            } else {
+            if (filters[index].arbCenter && filters[index].arbSize) {
                 const somaPromises: [Promise<ITracingNode>] = tracings.map(async (tracing) => {
                     return this._storageManager.Nodes.findOne({
                         where: {
@@ -899,7 +870,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
                 const pos = filters[index].arbCenter;
 
-                return tracings.filter((tracing, tracingIndex) => {
+                tracings = tracings.filter((tracing, tracingIndex) => {
                     const soma = somas[tracingIndex];
 
                     const distance = Math.sqrt(Math.pow(pos.x - soma.x, 2) + Math.pow(pos.y - soma.y, 2) + Math.pow(pos.z - soma.z, 2));
@@ -907,26 +878,37 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                     return distance <= filters[index].arbSize;
                 })
             }
+
+            const swcTracings = await this._storageManager.SwcTracings.findAll({where: {id: {$in: tracings.map(t => t.swcTracingId)}}});
+            const swcTracingLookup = swcTracings.map(s => s.id);
+
+            let neurons = await this._storageManager.Neurons.findAll({where: {id: {$in: swcTracings.map(s => s.neuronId)}}});
+
+            const neuronLookup = neurons.map(n => n.id);
+
+            tracings.map(t => {
+                const sIdx = swcTracingLookup.indexOf(t.swcTracingId);
+                const swcTracing = swcTracings[sIdx];
+
+                const nIdx = neuronLookup.indexOf(swcTracing.neuronId);
+                const neuron = neurons[nIdx];
+
+                if (isNullOrUndefined(neuron.tracings)) {
+                    neuron.tracings = [];
+                }
+
+                neuron.tracings.push(t);
+            });
+
+            return neurons;
         });
 
         results = await Promise.all(refinedQueryPromises);
 
-        let tracings = results.reduce((prev, curr, index) => {
-            // const all = _.uniqBy(prev.concat(curr), "id");
-
+        let neurons = await results.reduce((prev, curr, index) => {
             if (index === 0 || filters[index].composition === FilterComposition.or) {
                 return _.uniqBy(prev.concat(curr), "id");
             } else if  (filters[index].composition === FilterComposition.and) {
-                /*
-                const tracingA = prev.map(p => p.id);
-                const tracingB = curr.map(c => c.id);
-
-                const validIds = _.intersection(tracingA, tracingB);
-
-                return all.filter(a => {
-                    return validIds.includes(a.id);
-                });
-                */
                 return _.uniqBy(_.intersectionBy(prev, curr, "id"), "id");
             } else {
                 // Not
@@ -938,7 +920,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
         await this.logQueries(filters, queries, duration);
 
-        return {tracings, duration};
+        return {neurons, duration};
     }
 
     private async performCompartmentsFilterQuery(filters: IFilterInput[]) {
