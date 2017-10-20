@@ -1,6 +1,6 @@
 {
   "name": "transform-api",
-  "version": "1.0.35",
+  "version": "1.0.36",
   "private": true,
   "main": "src/transformApp.js",
   "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",

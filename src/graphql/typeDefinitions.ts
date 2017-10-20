@@ -190,6 +190,7 @@ type QueryOutput {
     neurons: [Neuron]
     totalCount: Int
     queryTime: Int
+    nonce: String
     error: Error
 } 
     

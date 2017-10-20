@@ -65,6 +65,7 @@ export interface IQueryDataPage {
     neurons: INeuron[];
     totalCount: number;
     queryTime: number;
+    nonce: string;
     error: Error;
 }
 
@@ -394,12 +395,12 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
             neurons = neurons.sort((b, a) => a.idString.localeCompare(b.idString));
 
-            return {neurons: neurons, queryTime: duration, totalCount, error: null};
+            return {neurons: neurons, queryTime: duration, totalCount, nonce: filters[0].nonce, error: null};
 
         } catch (err) {
             debug(err);
 
-            return {neurons: [], queryTime: -1, totalCount: 0, error: err};
+            return {neurons: [], queryTime: -1, totalCount: 0, nonce: filters[0].nonce, error: err};
         }
     }
 

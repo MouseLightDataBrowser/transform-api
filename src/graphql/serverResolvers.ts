@@ -59,6 +59,7 @@ export interface IFilterInput {
     arbSize: number;
     invert: boolean;
     composition: number;
+    nonce: string;
 }
 
 interface ITracingsPageArguments {
