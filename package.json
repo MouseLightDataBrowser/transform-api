@@ -1,6 +1,6 @@
 {
   "name": "transform-api",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "private": true,
   "main": "src/transformApp.js",
   "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
@@ -14,9 +14,6 @@
     "release": "gulp release"
   },
   "dependencies": {
-    "@types/passport": "^0.3.4",
-    "@types/passport-http": "^0.3.2",
-    "@types/passport-local": "^1.0.30",
     "archiver": "^2.0.3",
     "body-parser": "^1.17.2",
     "compression": "^1.7.1",
@@ -48,6 +45,9 @@
     "@types/gulp": "^4.0.3",
     "@types/gulp-shell": "^0.0.30",
     "@types/lodash": "^4.14.64",
+    "@types/passport": "^0.3.4",
+    "@types/passport-http": "^0.3.2",
+    "@types/passport-local": "^1.0.30",
     "@types/sanitize-filename": "^1.1.28",
     "@types/sequelize": "^4.0.55",
     "@types/uuid": "^2.0.29",
