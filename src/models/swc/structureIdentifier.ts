@@ -1,4 +1,4 @@
-const debug = require("debug")("ndb:transform:structure-identifier");
+const debug = require("debug")("mnb:transform:structure-identifier");
 
 export interface IStructureIdentifier {
     id: string;

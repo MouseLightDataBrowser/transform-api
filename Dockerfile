@@ -1,4 +1,4 @@
-FROM node:7.10
+FROM node:8.12
 
 RUN cd /tmp; wget https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.tar.gz
 RUN cd /tmp; tar xvzf hdf5-1.10.0-patch1.tar.gz
@@ -8,14 +8,12 @@ RUN cd /tmp/hdf5-1.10.0-patch1; make install
 
 WORKDIR /app
 
-RUN yarn global add typescript node-gyp
+COPY dist .
 
-COPY . .
+RUN yarn global add sequelize-cli
 
-RUN yarn install
+RUN yarn install --production=true
 
-RUN tsc
-
-CMD ["./start.sh"]
+CMD ["./docker-entry.sh"]
 
 EXPOSE  9661

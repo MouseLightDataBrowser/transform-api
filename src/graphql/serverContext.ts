@@ -8,7 +8,7 @@ import * as DataLoader from "dataloader";
 
 import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 
-const debug = require("debug")("ndb:transform:context");
+const debug = require("debug")("mnb:transform:context");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
 import {ISwcTracing} from "../models/swc/tracing";

@@ -2,7 +2,7 @@ import {SampleConnector} from "ndb-data-models";
 const Influx = require("influx");
 const Sequelize = require("sequelize");
 
-const debug = require("debug")("ndb:transform:database-connector");
+const debug = require("debug")("mnb:transform:database-connector");
 
 import {DatabaseOptions} from "../options/serviceOptions"
 

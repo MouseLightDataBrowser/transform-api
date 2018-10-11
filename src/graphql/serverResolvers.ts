@@ -4,7 +4,7 @@ import {
     ITracingsQueryInput
 } from "./serverContext";
 
-const debug = require("debug")("ndb:transform:resolvers");
+const debug = require("debug")("mnb:transform:resolvers");
 
 import {ISwcTracing} from "../models/swc/tracing";
 import {ExportFormat, ITracing} from "../models/transform/tracing";

@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const fork = require("child_process").fork;
 
-const debug = require("debug")("ndb:transform:transform-worker");
+const debug = require("debug")("mnb:transform:transform-worker");
 
 import {ServiceOptions} from "../options/serviceOptions";
 import {ITracing} from "../models/transform/tracing";

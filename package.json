@@ -1,15 +1,15 @@
 {
   "name": "transform-api",
-  "version": "1.0.38",
+  "version": "1.4.0",
   "private": true,
-  "main": "src/transformApp.js",
-  "repository": "https://github.com/MouseLightDataBrowser/transform-api.git",
+  "main": "src/app.js",
+  "repository": "https://github.com/MouseLightPipeline/mnb-transform-api.git",
   "author": "Patrick Edson <pedson@leapscientific.com>",
   "license": "Janelia",
   "dockerRepository": "mouselightdatabrowser",
   "scripts": {
-    "start": "node --max-old-space-size=8192 --optimize-for-size src/transformApp.js",
-    "dev": "DEBUG=ndb:transform* node --trace-warnings --max-old-space-size=8192 --optimize-for-size $NODE_DEBUG_OPTION src/transformApp.js",
+    "start": "node --max-old-space-size=8192 --optimize-for-size src/app.js",
+    "dev": "DEBUG=mnb:transform* node --trace-warnings --max-old-space-size=8192 --optimize-for-size $NODE_DEBUG_OPTION src/app.js",
     "docker-build": "gulp docker-build",
     "release": "gulp release"
   },
@@ -28,7 +28,6 @@
     "hdf5": "https://github.com/pedson/hdf5.node.git",
     "influx": "^5.0.7",
     "lodash": "^4.17.4",
-    "mssql": "^4.0.4",
     "ndb-data-models": "^0.8.3",
     "passport": "^0.4.0",
     "passport-http": "^0.3.0",

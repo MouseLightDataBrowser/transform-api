@@ -3,7 +3,7 @@ const Access = require("hdf5/lib/globals").Access;
 import * as uuid from "uuid";
 import {IBrainArea} from "ndb-data-models";
 
-const debug = require("debug")("ndb:transform:node-worker");
+const debug = require("debug")("mnb:transform:node-worker");
 
 import {PersistentStorageManager} from "../models/databaseConnector";
 import {ServiceOptions} from "../options/serviceOptions";
