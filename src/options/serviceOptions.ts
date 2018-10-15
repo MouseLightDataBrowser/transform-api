@@ -79,31 +79,29 @@ function loadConfiguration(): IServiceOptions {
 
     c.ontologyPath = process.env.ONTOLOGY_PATH || c.ontologyPath;
 
-    c.release =  process.env.NEURON_BROWSER_RELEASE || c.release;
+    c.release = process.env.NEURON_BROWSER_RELEASE || c.release;
 
     c.version = readSystemVersion();
 
-    const dbEnvName = process.env.DATABASE_ENV || envName;
-
-    c.databaseOptions.sample = Databases.sample[dbEnvName];
+    c.databaseOptions.sample = Databases.sample;
     c.databaseOptions.sample.host = process.env.SAMPLE_DB_HOST || c.databaseOptions.sample.host;
     c.databaseOptions.sample.port = process.env.SAMPLE_DB_PORT || c.databaseOptions.sample.port;
     c.databaseOptions.sample.user = process.env.DATABASE_USER || c.databaseOptions.sample.user;
     c.databaseOptions.sample.password = process.env.DATABASE_PW || "pgsecret";
 
-    c.databaseOptions.swc = Databases.swc[dbEnvName];
+    c.databaseOptions.swc = Databases.swc;
     c.databaseOptions.swc.host = process.env.SWC_DB_HOST || c.databaseOptions.swc.host;
     c.databaseOptions.swc.port = process.env.SWC_DB_PORT || c.databaseOptions.swc.port;
     c.databaseOptions.swc.user = process.env.DATABASE_USER || c.databaseOptions.swc.user;
     c.databaseOptions.swc.password = process.env.DATABASE_PW || "pgsecret";
 
-    c.databaseOptions.transform = Databases.transform[dbEnvName];
+    c.databaseOptions.transform = Databases.transform;
     c.databaseOptions.transform.host = process.env.TRANSFORM_DB_HOST || c.databaseOptions.transform.host;
     c.databaseOptions.transform.port = process.env.TRANSFORM_DB_PORT || c.databaseOptions.transform.port;
     c.databaseOptions.transform.user = process.env.DATABASE_USER || c.databaseOptions.transform.user;
     c.databaseOptions.transform.password = process.env.DATABASE_PW || "pgsecret";
 
-    c.databaseOptions.metrics = Databases.metrics[dbEnvName];
+    c.databaseOptions.metrics = Databases.metrics;
 
     // Can be null if not implemented in a particular deployment environment.
     if (c.databaseOptions.metrics) {
