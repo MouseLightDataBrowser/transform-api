@@ -23,7 +23,7 @@ export interface ISampleDatabaseModels {
     MouseStrain?: IMouseStrainTable
     Sample?: ISampleTable;
     Injection?: IInjectionTable;
-    Transform?: ITransformTable;
+    RegistrationTransform?: ITransformTable;
     Neuron?: INeuronTable;
 }
 
@@ -68,7 +68,7 @@ export class PersistentStorageManager {
     }
 
     public get RegistrationTransforms() {
-        return this.sampleDatabase.models.Transform;
+        return this.sampleDatabase.models.RegistrationTransform;
     }
 
     public get Neurons() {

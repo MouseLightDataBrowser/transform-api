@@ -79,7 +79,7 @@ export function sequelizeImport(sequelize, DataTypes: DataTypes): ISampleTable {
 
     Sample.associate = (models: Models) => {
         Sample.hasMany(models.Injection, {foreignKey: "sampleId", as: "injections"});
-        Sample.hasMany(models.Transform, {
+        Sample.hasMany(models.RegistrationTransform, {
             foreignKey: "sampleId",
             as: "registrationTransforms"
         });
