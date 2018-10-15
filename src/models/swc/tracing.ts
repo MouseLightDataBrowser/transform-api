@@ -1,4 +1,12 @@
-import {ISwcNode} from "./tracingNode";
+import {ISwcNodeAttributes} from "./tracingNode";
+import {ITracingStructure} from "./tracingStructure";
+
+export interface ISwcTracingInput {
+    id: string;
+    annotator?: string;
+    neuronId?: string;
+    tracingStructureId?: string;
+}
 
 export interface ISwcTracing {
     id: string;
@@ -11,7 +19,8 @@ export interface ISwcTracing {
     offsetZ: number;
     tracingStructureId: string;
 
-    getNodes(): ISwcNode[];
+    getNodes(): ISwcNodeAttributes[];
+    getTracingStructure(): ITracingStructure;
 }
 
 export const TableName = "SwcTracing";
@@ -52,15 +61,14 @@ export function sequelizeImport(sequelize, DataTypes) {
             defaultValue: 0
         }
     }, {
-        classMethods: {
-            associate: models => {
-                Tracing.hasMany(models.SwcTracingNode, {foreignKey: "swcTracingId", as: "Nodes"});
-                Tracing.belongsTo(models.TracingStructure, {foreignKey: "tracingStructureId"});
-            }
-        },
         timestamps: true,
         paranoid: false
     });
+
+    Tracing.associate = models => {
+        Tracing.hasMany(models.SwcTracingNode, {foreignKey: "swcTracingId", as: "Nodes"});
+        Tracing.belongsTo(models.TracingStructure, {foreignKey: "tracingStructureId"});
+    };
 
     return Tracing;
 }

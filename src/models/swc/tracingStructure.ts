@@ -16,14 +16,13 @@ export function sequelizeImport(sequelize, DataTypes) {
         name: DataTypes.TEXT,
         value: DataTypes.INTEGER
     }, {
-        classMethods: {
-            associate: models => {
-                TracingStructure.hasMany(models.SwcTracing, {foreignKey: "tracingStructureId", as: "Tracings"});
-            }
-        },
         timestamps: true,
         paranoid: true
     });
+
+    TracingStructure.associate = models => {
+        TracingStructure.hasMany(models.SwcTracing, {foreignKey: "tracingStructureId", as: "SwcTracings"});
+    };
 
     return TracingStructure;
 }

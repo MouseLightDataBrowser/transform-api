@@ -1,5 +1,6 @@
 import * as path from "path";
 import {operatorIdValueMap} from "../models/search/queryOperator";
+import {Op} from "sequelize";
 import * as Archiver from "archiver";
 
 const _ = require("lodash");
@@ -10,21 +11,22 @@ import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structur
 
 const debug = require("debug")("mnb:transform:context");
 
-import {PersistentStorageManager} from "../models/databaseConnector";
+import {PersistentStorageManager} from "../models/storageManager";
 import {ISwcTracing} from "../models/swc/tracing";
-import {ExportFormat, ITracing} from "../models/transform/tracing";
+import {ExportFormat, ITracingAttributes} from "../models/transform/tracing";
 import {ISwcNode} from "../models/swc/tracingNode";
-import {ITracingNode, INodePage} from "../models/transform/tracingNode";
+import {ITracingNodeAttributes, INodePage, IPageInput} from "../models/transform/tracingNode";
 import {ITransformResult, TransformManager} from "../transform/transformManager";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
-import {IPageInput} from "./interfaces/page";
-import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
-import {IBrainArea, INeuron, IRegistrationTransform} from "ndb-data-models";
+import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
 import {isNullOrUndefined} from "util";
 import * as fs from "fs";
 import * as sanitize from "sanitize-filename";
 import * as uuid from "uuid";
+import {INeuron} from "../models/sample/neuron";
+import {IBrainArea} from "../models/sample/brainArea";
+import {ITransform} from "../models/sample/transform";
 
 export interface ITracingsQueryInput {
     offset?: number;
@@ -40,7 +42,7 @@ export interface ITracingPage {
     limit: number;
     totalCount: number;
     matchCount: number;
-    tracings: ITracing[];
+    tracings: ITracingAttributes[];
 }
 
 export interface IDeleteTracingOutput {
@@ -50,8 +52,8 @@ export interface IDeleteTracingOutput {
 }
 
 export interface ITracingCompartmentOutput {
-    tracing: ITracingNode;
-    compartments: IBrainCompartment[];
+    tracing: ITracingNodeAttributes;
+    compartments: IBrainCompartmentAttributes[];
 }
 
 export interface ICompartmentQueryOutputPage {
@@ -80,90 +82,16 @@ export enum FilterComposition {
     not = 3
 }
 
-export interface IGraphQLServerContext {
-    getBrainAreas(): Promise<IBrainArea[]>;
-
-    getBrainArea(id: string): Promise<IBrainArea>;
-
-    getStructureIdentifiers(): Promise<IStructureIdentifier[]>;
-
-    getStructureIdValue(id: string): number;
-
-    getTracingStructures(): Promise<ITracingStructure[]>;
-
-    getSwcTracings(): Promise<ISwcTracing[]>;
-
-    getSwcTracing(id: string): Promise<ISwcTracing>;
-
-    getSwcNodeCount(tracing: ISwcTracing): Promise<number>;
-
-    getFirstSwcNode(tracing: ISwcTracing): Promise<ISwcNode>;
-
-    getSwcTracingStructure(tracing: ISwcTracing): Promise<ITracingStructure>;
-
-    getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier>;
-
-    getNeuron(id: string): Promise<INeuron>;
-
-    getTracings(queryInput: ITracingsQueryInput): Promise<ITracingPage>;
-
-    getTracing(id: string): Promise<ITracing>;
-
-    getCompartmentsWithFilters(filters: IFilterInput[]): Promise<ICompartmentQueryOutputPage>;
-
-    getNeuronsWithFilters(filters: IFilterInput[]): Promise<IQueryDataPage>;
-
-    getNodeCount(tracing: ITracing): Promise<number>;
-
-    getFirstTracingNode(tracing: ITracing): Promise<ITracingNode>;
-
-    getSoma(tracing: ITracing): Promise<ITracingNode>;
-
-    getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
-
-    getKeyNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]>
-
-    getNodePage(page: IPageInput): Promise<INodePage>;
-
-    getNodePage2(page: IPageInput, filters: IFilterInput[]): Promise<INodePage>;
-
-    getTracingStructure(tracing: ITracing): Promise<ITracingStructure>;
-
-    getNodeSwcNode(node: ITracingNode): Promise<ISwcNode>;
-
-    getNodeStructureIdentifier(node: ITracingNode): Promise<IStructureIdentifier>;
-
-    getNodeBrainArea(node: ITracingNode): Promise<IBrainArea>;
-
-    getRegistrationTransform(id: string): Promise<IRegistrationTransform>;
-
-    getBrainCompartmentContents(): Promise<IBrainCompartment[]>
-
-    getUntransformedSwc(): Promise<ISwcTracing[]>;
-
-    // Mutations
-    applyTransform(swcTracingId: string): Promise<ITransformResult>;
-
-    reapplyTransform(tracingId: string): Promise<ITransformResult>;
-    reapplyTransforms(): Promise<ITransformResult>;
-
-    deleteTracings(ids: string[]): Promise<IDeleteTracingOutput[]>;
-
-    deleteTracingsForSwc(swcIds: string[]): Promise<IDeleteTracingOutput[]>;
-
-    requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]>;
-}
-
 const _storageManager = PersistentStorageManager.Instance();
 
 const _brainAreaDataLoader = new DataLoader<string, IBrainArea>(async (ids: string[]) => {
     // Does not return in same order as data loader provides.
-    const areas = await _storageManager.BrainAreas.findAll({where: {id: {$in: ids}}});
+    const areas = await _storageManager.BrainAreas.findAll({where: {id: {[Op.in]: ids}}});
 
     return ids.map(id => areas.find(a => a.id === id));
 });
 
-export class GraphQLServerContext implements IGraphQLServerContext {
+export class GraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
 
     public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
@@ -171,7 +99,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public getStructureIdValue(id: string): number {
-        return this._storageManager.StructureIdentifiers.idValue(id);
+        return this._storageManager.StructureIdentifiers.valueForId(id);
     }
 
     public async getTracingStructures(): Promise<ITracingStructure[]> {
@@ -183,7 +111,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return this._storageManager.BrainAreas.findAll({});
         } else {
             // return _brainAreaDataLoader.loadMany(ids);
-            return this._storageManager.BrainAreas.findAll({where: {id: {$in: ids}}});
+            return this._storageManager.BrainAreas.findAll({where: {id: {[Op.in]: ids}}});
         }
     }
 
@@ -234,7 +162,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return n;
     }
 
-    public async getRegistrationTransform(id: string): Promise<IRegistrationTransform> {
+    public async getRegistrationTransform(id: string): Promise<ITransform> {
         return this._storageManager.RegistrationTransforms.findById(id);
     }
 
@@ -273,15 +201,15 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             }
 
             if (swcStructureMatchIds.length > 0) {
-                options.where["swcTracingId"] = {$in: swcStructureMatchIds};
+                options.where["swcTracingId"] = {[Op.in]: swcStructureMatchIds};
             }
 
             if (queryInput.registrationTransformIds && queryInput.registrationTransformIds.length > 0) {
-                options.where["registrationTransformId"] = {$in: queryInput.registrationTransformIds};
+                options.where["registrationTransformId"] = {[Op.in]: queryInput.registrationTransformIds};
             }
 
             if (queryInput.tracingIds && queryInput.tracingIds.length > 0) {
-                options.where["id"] = {$in: queryInput.tracingIds};
+                options.where["id"] = {[Op.in]: queryInput.tracingIds};
             }
 
             out.matchCount = await this._storageManager.Tracings.count(options);
@@ -310,7 +238,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return out;
     }
 
-    public async getTracing(id: string): Promise<ITracing> {
+    public async getTracing(id: string): Promise<ITracingAttributes> {
         return this._storageManager.Tracings.findById(id);
     }
 
@@ -375,11 +303,11 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         }
     }
 
-    public async getFirstTracingNode(tracing: ITracing): Promise<ITracingNode> {
+    public async getFirstTracingNode(tracing: ITracingAttributes): Promise<ITracingNodeAttributes> {
         return await this._storageManager.Nodes.findOne({where: {sampleNumber: 1, tracingId: tracing.id}});
     }
 
-    public async getSoma(tracing: ITracing): Promise<ITracingNode> {
+    public async getSoma(tracing: ITracingAttributes): Promise<ITracingNodeAttributes> {
         return await this._storageManager.Nodes.findOne({
             where: {
                 structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma),
@@ -388,13 +316,13 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         });
     }
 
-    public async getTracingStructure(tracing: ITracing): Promise<ITracingStructure> {
+    public async getTracingStructure(tracing: ITracingAttributes): Promise<ITracingStructure> {
         const swcTracing = await this._storageManager.SwcTracings.findOne({where: {id: tracing.swcTracingId}});
 
         return await this._storageManager.TracingStructures.findOne({where: {id: swcTracing.tracingStructureId}});
     }
 
-    public async getNodeCount(tracing: ITracing): Promise<number> {
+    public async getNodeCount(tracing: ITracingAttributes): Promise<number> {
         if (!tracing) {
             return 0;
         }
@@ -408,7 +336,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return result;
     }
 
-    public async getNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]> {
+    public async getNodes(tracing: ITracingAttributes, brainAreaIds: string[]): Promise<ITracingNodeAttributes[]> {
         if (!tracing || !tracing.id) {
             return [];
         }
@@ -427,7 +355,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         // return this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
     }
 
-    public async getKeyNodes(tracing: ITracing, brainAreaIds: string[]): Promise<ITracingNode[]> {
+    public async getKeyNodes(tracing: ITracingAttributes, brainAreaIds: string[]): Promise<ITracingNodeAttributes[]> {
         if (!tracing || !tracing.id) {
             return [];
         }
@@ -490,9 +418,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
 
         const tracing = await this._storageManager.Tracings.findForSwcTracing(swcTracing, registrationTransform);
 
-        const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
-
-        return result;
+        return TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
     }
 
     private applyNextTransform(all: string[]) {
@@ -532,15 +458,13 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 return {tracing: null, errors: [`Could not locate registered transform in database`]};
             }
 
-            const result = await TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
-
-            return result;
+            return TransformManager.Instance().applyTransform(tracing, swcTracing, registrationTransform);
         }
 
         return {tracing: null, errors: [`Could not locate registered tracing`]};
     }
 
-    public async getNodeBrainArea(node: ITracingNode): Promise<IBrainArea> {
+    public async getNodeBrainArea(node: ITracingNodeAttributes): Promise<IBrainArea> {
         if (node.brainAreaId) {
             return _brainAreaDataLoader.load(node.brainAreaId);
             // return this._storageManager.BrainAreas.findById(node.brainAreaId);
@@ -553,22 +477,22 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.StructureIdentifiers.findOne({where: {id: node.structureIdentifierId}})
     }
 
-    public async getNodeSwcNode(node: ITracingNode): Promise<ISwcNode> {
+    public async getNodeSwcNode(node: ITracingNodeAttributes): Promise<ISwcNode> {
         return this._storageManager.SwcNodes.findOne({where: {id: node.swcNodeId}})
     }
 
-    public async getNodeStructureIdentifier(node: ITracingNode): Promise<IStructureIdentifier> {
+    public async getNodeStructureIdentifier(node: ITracingNodeAttributes): Promise<IStructureIdentifier> {
         return this._storageManager.StructureIdentifiers.findOne({where: {id: node.structureIdentifierId}})
     }
 
-    public async getBrainCompartmentContents(): Promise<IBrainCompartment[]> {
+    public async getBrainCompartmentContents(): Promise<IBrainCompartmentAttributes[]> {
         return this._storageManager.BrainCompartment.findAll({});
     }
 
     public async getUntransformedSwc(): Promise<ISwcTracing[]> {
         const obj = await this._storageManager.Tracings.findAll({
             attributes: ["swcTracingId"],
-            where: {transformedAt: {$ne: null}}
+            where: {transformedAt: {[Op.ne]: null}}
         });
 
         if (obj.length === 0) {
@@ -580,7 +504,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return this._storageManager.SwcTracings.findAll({
             where: {
                 id: {
-                    $notIn: ids
+                    [Op.notIn]: ids
                 }
             }
         });
@@ -592,7 +516,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         }
 
         return Promise.all(ids.map(async (id) => {
-            let tracing: ITracing = await this._storageManager.Tracings.findById(id);
+            let tracing: ITracingAttributes = await this._storageManager.Tracings.findById(id);
 
             if (!tracing) {
                 return createDeletedTracingOutput(tracing.id, tracing.swcTracingId, {
@@ -629,7 +553,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 
     public async deleteTracingsForSwc(swcIds: string[]): Promise<IDeleteTracingOutput[]> {
-        const tracingIds = await this._storageManager.Tracings.findAll({where: {swcTracingId: {$in: swcIds}}}).map(o => o.id);
+        const tracingIds = await this._storageManager.Tracings.findAll({where: {swcTracingId: {[Op.in]: swcIds}}}).map(o => o.id);
 
         return this.deleteTracings(tracingIds);
     }
@@ -639,23 +563,23 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return [];
         }
 
-        const tracings = await this._storageManager.Tracings.findAll({where: {id: {$in: tracingIds}}});
+        const tracings = await this._storageManager.Tracings.findAll({where: {id: {[Op.in]: tracingIds}}});
 
         if (tracings.length === 0) {
             return [];
         }
 
-        const idFunc = this._storageManager.StructureIdentifiers.idValue;
+        const idFunc = this._storageManager.StructureIdentifiers.valueForId;
 
         const promises: Promise<IRequestExportOutput>[] = (tracings.map((async (tracing) => {
-            const nodes: ITracingNode[] = await this._storageManager.Nodes.findAll({
+            const nodes: ITracingNodeAttributes[] = await this._storageManager.Nodes.findAll({
                 where: {tracingId: tracing.id},
                 order: [["sampleNumber", "ASC"]]
             });
 
             const swcTracing: ISwcTracing = await this._storageManager.SwcTracings.findById(tracing.swcTracingId);
 
-            const transform: IRegistrationTransform = await this._storageManager.RegistrationTransforms.findById(tracing.registrationTransformId);
+            const transform: ITransform = await this._storageManager.RegistrationTransforms.findById(tracing.registrationTransformId);
 
             const neuron: INeuron = await this._storageManager.Neurons.findById(swcTracing.neuronId);
 
@@ -730,8 +654,8 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         }
     }
 
-    private async queryForCompartmentFilter(filter: IFilterInput) {
-        let query: FindOptions = {
+    private async queryForCompartmentFilter(filter: IFilterInput): Promise<FindOptions<IBrainCompartmentAttributes>> {
+        let query: FindOptions<IBrainCompartmentAttributes> = {
             where: {},
             include: [this._storageManager.Tracings]
         };
@@ -755,7 +679,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         if (swcStructureMatchIds.length > 0) {
             query.include = [{
                 model: this._storageManager.Tracings,
-                where: {swcTracingId: {$in: swcStructureMatchIds}}
+                where: {swcTracingId: {[Op.in]: swcStructureMatchIds}}
             }];
         }
 
@@ -763,19 +687,19 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             // Structure paths of the selected brain areas.
             const brainStructurePaths = (await this._storageManager.BrainAreas.findAll({
                 attributes: ["structureIdPath"],
-                where: {id: {$in: filter.brainAreaIds}}
+                where: {id: {[Op.in]: filter.brainAreaIds}}
             })).map(o => o.structureIdPath + "%");
 
             // Find all brain areas that are these or children of in terms of structure path.
             const comprehensiveBrainAreaObjs = (await this._storageManager.BrainAreas.findAll({
                 attributes: ["id", "structureIdPath"],
-                where: {structureIdPath: {$like: {$any: brainStructurePaths}}}
+                where: {structureIdPath: {[Op.like]: {[Op.any]: brainStructurePaths}}}
             }));
 
             const comprehensiveBrainAreaIds = comprehensiveBrainAreaObjs.map(o => o.id);
 
             query.where["brainAreaId"] = {
-                $in: comprehensiveBrainAreaIds
+                [Op.in]: comprehensiveBrainAreaIds
             };
         }
 
@@ -814,7 +738,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 }).filter(q => q !== null);
 
                 if (subQ.length > 0) {
-                    query.where["$or"] = subQ;
+                    query.where[Op.or] = subQ;
                 }
             } else if (filter.nodeStructureIds.length > 0) {
                 const columnName = this._storageManager.StructureIdentifiers.countColumnName(filter.nodeStructureIds[0]);
@@ -838,7 +762,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     private async performNeuronsFilterQuery(filters: IFilterInput[]) {
         const start = Date.now();
 
-        const promises = filters.map(async (filter) => {
+        const promises: Promise<FindOptions<IBrainCompartmentAttributes>>[] = filters.map((filter) => {
             return this.queryForCompartmentFilter(filter);
         });
 
@@ -854,10 +778,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         // Not interested in individual compartment results.  Just want unique tracings mapped back to neurons for
         // grouping.  Need to reorg by neurons before applying composition.
         const refinedQueryPromises = results.map(async (compartmentList, index) => {
-            let tracings = _.uniqBy(compartmentList.map(c => c.Tracing), "id");
+            let tracings = _.uniqBy(compartmentList.map(c => c.tracing), "id");
 
             if (filters[index].arbCenter && filters[index].arbSize) {
-                const somaPromises: [Promise<ITracingNode>] = tracings.map(async (tracing) => {
+                const somaPromises: [Promise<ITracingNodeAttributes>] = tracings.map(async (tracing) => {
                     return this._storageManager.Nodes.findOne({
                         where: {
                             structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma),
@@ -866,7 +790,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                     });
                 });
 
-                const somas: ITracingNode[] = await Promise.all(somaPromises);
+                const somas: ITracingNodeAttributes[] = await Promise.all(somaPromises);
 
                 const pos = filters[index].arbCenter;
 
@@ -879,10 +803,10 @@ export class GraphQLServerContext implements IGraphQLServerContext {
                 })
             }
 
-            const swcTracings = await this._storageManager.SwcTracings.findAll({where: {id: {$in: tracings.map(t => t.swcTracingId)}}});
+            const swcTracings = await this._storageManager.SwcTracings.findAll({where: {id: {[Op.in]: tracings.map(t => t.swcTracingId)}}});
             const swcTracingLookup = swcTracings.map(s => s.id);
 
-            let neurons = await this._storageManager.Neurons.findAll({where: {id: {$in: swcTracings.map(s => s.neuronId)}}});
+            let neurons = await this._storageManager.Neurons.findAll({where: {id: {[Op.in]: swcTracings.map(s => s.neuronId)}}});
 
             const neuronLookup = neurons.map(n => n.id);
 
@@ -903,9 +827,9 @@ export class GraphQLServerContext implements IGraphQLServerContext {
             return neurons;
         });
 
-        results = await Promise.all(refinedQueryPromises);
+        let neuronResults = await Promise.all(refinedQueryPromises);
 
-        let neurons = await results.reduce((prev, curr, index) => {
+        let neurons = await neuronResults.reduce((prev, curr, index) => {
             if (index === 0 || filters[index].composition === FilterComposition.or) {
                 return _.uniqBy(prev.concat(curr), "id");
             } else if  (filters[index].composition === FilterComposition.and) {
@@ -926,7 +850,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     private async performCompartmentsFilterQuery(filters: IFilterInput[]) {
         const start = Date.now();
 
-        const promises = filters.map(async (filter) => {
+        const promises: Promise<FindOptions<IBrainCompartmentAttributes>>[] = filters.map(async (filter) => {
             return this.queryForCompartmentFilter(filter);
         });
 
@@ -970,7 +894,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
         return {compartments, duration};
     }
 
-    private async logQueries(filters: IFilterInput[], queries: FindOptions[], duration) {
+    private async logQueries(filters: IFilterInput[], queries: FindOptions<IBrainCompartmentAttributes>[], duration) {
         // Fixes json -> string for model circular reference when logging.
         const queryLog = queries ? queries.map(q => {
             let ql = {where: q.where};
@@ -989,7 +913,7 @@ export class GraphQLServerContext implements IGraphQLServerContext {
     }
 }
 
-function mapToSwc(tracing: ITracing, swcTracing: ISwcTracing, neuron: INeuron, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): string {
+function mapToSwc(tracing: ITracingAttributes, swcTracing: ISwcTracing, neuron: INeuron, transform: ITransform, nodes: ITracingNodeAttributes[], idFunc: any): string {
     const header = `# Registered tracing exported from Mouse Light neuron data browser.\n`
         + `# Exported: ${(new Date()).toUTCString()}\n`
         + `# SourceFile: ${swcTracing.filename}\n`
@@ -1002,7 +926,7 @@ function mapToSwc(tracing: ITracing, swcTracing: ISwcTracing, neuron: INeuron, t
     }, header);
 }
 
-function mapToJSON(tracing: ITracing, swcTracing: ISwcTracing, neuron: INeuron, transform: IRegistrationTransform, nodes: ITracingNode[], idFunc: any): any {
+function mapToJSON(tracing: ITracingAttributes, swcTracing: ISwcTracing, neuron: INeuron, transform: ITransform, nodes: ITracingNodeAttributes[], idFunc: any): any {
     const obj = {
         info: {
             exported: (new Date()).toUTCString(),

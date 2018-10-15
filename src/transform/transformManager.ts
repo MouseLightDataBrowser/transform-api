@@ -6,7 +6,7 @@ const fork = require("child_process").fork;
 const debug = require("debug")("mnb:transform:transform-worker");
 
 import {ServiceOptions} from "../options/serviceOptions";
-import {ITracing} from "../models/transform/tracing";
+import {ITracingAttributes} from "../models/transform/tracing";
 import {ISwcTracing} from "../models/swc/tracing";
 
 export interface ITransformProgress {
@@ -16,7 +16,7 @@ export interface ITransformProgress {
 }
 
 export interface ITransformResult {
-    tracing: ITracing,
+    tracing: ITracingAttributes,
     errors: string[];
 }
 
@@ -29,11 +29,11 @@ export class TransformManager {
         return _manager;
     }
 
-    public statusForTracing(tracing: ITracing) {
+    public statusForTracing(tracing: ITracingAttributes) {
         return tracing ? this._inProgressMap.get(tracing.id) : null;
     }
 
-    public async applyTransform(tracing: ITracing, swcTracing: ISwcTracing, registrationTransform): Promise<ITransformResult> {
+    public async applyTransform(tracing: ITracingAttributes, swcTracing: ISwcTracing, registrationTransform): Promise<ITransformResult> {
         if (!tracing || !swcTracing || !registrationTransform) {
             debug("one or more input object is null|undefined");
             return {tracing: null, errors: ["one or more input object is null|undefined"]};

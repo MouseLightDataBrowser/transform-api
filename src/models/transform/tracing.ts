@@ -1,12 +1,14 @@
 import {ISwcTracing} from "../swc/tracing";
-import {ITracingNode} from "./tracingNode";
+import {ITracingNode, ITracingNodeAttributes} from "./tracingNode";
+import {Instance, Model} from "sequelize";
+import {IBrainCompartment} from "./brainCompartmentContents";
 
 export enum ExportFormat {
     SWC = 0,
     JSON = 1
 }
 
-export interface ITracing {
+export interface ITracingAttributes {
     id: string;
     swcTracingId?: string;
     registrationTransformId?: string;
@@ -18,8 +20,20 @@ export interface ITracing {
     createdAt?: Date;
     updatedAt?: Date;
 
-    getNodes?(): ITracingNode[];
+    getNodes?(): ITracingNodeAttributes[];
     applyTransform?();
+}
+
+export interface ITracing extends Instance<ITracingAttributes>, ITracingAttributes {
+    compartments: IBrainCompartment[];
+    getCompartments(): IBrainCompartment[];
+
+    node: ITracingNode[];
+    getNodes(): ITracingNode[];
+}
+
+export interface ITracingTable extends Model<ITracing, ITracingAttributes> {
+    findForSwcTracing(swcTracing: ISwcTracing, registration): Promise<ITracing>;
 }
 
 export const TableName = "Tracing";
@@ -41,17 +55,16 @@ export function sequelizeImport(sequelize, DataTypes) {
         endCount: DataTypes.INTEGER,
         transformedAt: DataTypes.DATE
     }, {
-        classMethods: {
-            associate: models => {
-                Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "nodes"});
-                Tracing.hasMany(models.BrainCompartmentContents, {foreignKey: "tracingId", as: "compartments"});
-            }
-        },
         timestamps: true,
         paranoid: false
     });
 
-    Tracing.findForSwcTracing = async(swcTracing: ISwcTracing, registration) => {
+    Tracing.associate = models => {
+        Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "nodes"});
+        Tracing.hasMany(models.BrainCompartmentContents, {foreignKey: "tracingId", as: "compartments"});
+    };
+
+    Tracing.findForSwcTracing = async(swcTracing: ISwcTracing, registration): Promise<ITracing> => {
         const result = await Tracing.findOrCreate({where: {swcTracingId: swcTracing.id, registrationTransformId: registration.id}});
 
         return (result && result.length > 0) ? result[0] : null;

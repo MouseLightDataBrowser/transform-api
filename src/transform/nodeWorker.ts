@@ -1,14 +1,15 @@
+import {IBrainArea} from "../models/sample/brainArea";
+
 const hdf5 = require("hdf5").hdf5;
 const Access = require("hdf5/lib/globals").Access;
 import * as uuid from "uuid";
-import {IBrainArea} from "ndb-data-models";
 
 const debug = require("debug")("mnb:transform:node-worker");
 
-import {PersistentStorageManager} from "../models/databaseConnector";
+import {PersistentStorageManager} from "../models/storageManager";
 import {ServiceOptions} from "../options/serviceOptions";
 import {StructureIdentifiers} from "../models/swc/structureIdentifier";
-import {IBrainCompartment} from "../models/transform/brainCompartmentContents";
+import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
 
 const storageManager = PersistentStorageManager.Instance();
 
@@ -182,7 +183,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
                 counts.node += 1;
 
-                switch (storageManager.StructureIdentifiers.idValue(swcNode.structureIdentifierId)) {
+                switch (storageManager.StructureIdentifiers.valueForId(swcNode.structureIdentifierId)) {
                     case StructureIdentifiers.soma:
                         counts.soma++;
                         break;
@@ -197,7 +198,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
                 }
             }
 
-            switch (storageManager.StructureIdentifiers.idValue(swcNode.structureIdentifierId)) {
+            switch (storageManager.StructureIdentifiers.valueForId(swcNode.structureIdentifierId)) {
                 case StructureIdentifiers.soma:
                     tracingCounts.soma++;
                     break;
@@ -248,7 +249,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         await storageManager.BrainCompartment.destroy({where: {tracingId: tracing.id}, force: true});
 
-        let compartments: IBrainCompartment[] = [];
+        let compartments: IBrainCompartmentAttributes[] = [];
 
         for (const entry of compartmentMap.entries()) {
             compartments.push({

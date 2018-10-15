@@ -1,4 +1,8 @@
-let typeDefinitions = `
+import {gql} from "apollo-server-express";
+
+export const typeDefinitions = gql`
+scalar Date
+
 type SystemSettings {
     version: String
     release: String
@@ -26,16 +30,16 @@ type BrainArea {
     geometryFile: String
     geometryColor: String
     geometryEnable: Boolean
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type TracingStructure {
     id: String!
     name: String
     value: Int
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type StructureIdentifier {
@@ -43,8 +47,8 @@ type StructureIdentifier {
     name: String
     value: Int
     mutable: Boolean
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type RegistrationTransform {
@@ -52,8 +56,8 @@ type RegistrationTransform {
     location: String
     name: String
     notes: String
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type Neuron {
@@ -64,8 +68,8 @@ type Neuron {
     keywords: String
     brainArea: BrainArea
     tracings: [Tracing]
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type SwcTracing {
@@ -80,8 +84,8 @@ type SwcTracing {
     firstNode: SwcNode
     tracingStructure: TracingStructure
     neuron: Neuron
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type SwcNode {
@@ -93,14 +97,13 @@ type SwcNode {
     z: Float
     radius: Float
     structureIdentifier: StructureIdentifier
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type Tracing {
     id: String!
-    nodeCount: Int
-    transformedAt: Float
+    transformedAt: Date
     transformStatus: TransformStatus
     firstNode: Node
     soma: Node
@@ -113,8 +116,8 @@ type Tracing {
     pathCount: Int
     branchCount: Int
     endCount: Int
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type Node {
@@ -132,8 +135,8 @@ type Node {
     structureIdentifierId: String
     structureIdValue: Int
     swcNode: SwcNode
-    createdAt: Float
-    updatedAt: Float
+    createdAt: Date
+    updatedAt: Date
 }
 
 type NodePage {
@@ -153,7 +156,7 @@ type TracingPage {
 }
 
 type TransformStatus {
-    startedAt: Float
+    startedAt: Date
     inputNodeCount: Int
     outputNodeCount: Int
 }
@@ -292,5 +295,3 @@ schema {
   query: Query
   mutation: Mutation
 }`;
-
-export default typeDefinitions;

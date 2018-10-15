@@ -1,22 +1,30 @@
-import {SampleConnector} from "ndb-data-models";
+import {DatabaseOptions} from "../options/databaseOptions";
+
 const Influx = require("influx");
 const Sequelize = require("sequelize");
 
 const debug = require("debug")("mnb:transform:database-connector");
 
-import {DatabaseOptions} from "../options/serviceOptions"
-
 import {loadModels} from "./modelLoader";
+import {IBrainCompartmentTable} from "./transform/brainCompartmentContents";
+import {IBrainAreaTable} from "./sample/brainArea";
+import {IFluorophoreTable} from "./sample/fluorophore";
+import {IInjectionVirusTable} from "./sample/injectionVirus";
+import {IMouseStrainTable} from "./sample/mouseStrain";
+import {ISampleTable} from "./sample/sample";
+import {IInjectionTable} from "./sample/injection";
+import {ITransformTable} from "./sample/transform";
+import {INeuronTable} from "./sample/neuron";
 
 export interface ISampleDatabaseModels {
-    BrainArea?: any
-    Fluorophore?: any
-    InjectionVirus?: any
-    MouseStrain?: any
-    Sample?: any;
-    Injection?: any;
-    RegistrationTransform?: any;
-    Neuron?: any;
+    BrainArea?: IBrainAreaTable
+    Fluorophore?: IFluorophoreTable
+    InjectionVirus?: IInjectionVirusTable
+    MouseStrain?: IMouseStrainTable
+    Sample?: ISampleTable;
+    Injection?: IInjectionTable;
+    Transform?: ITransformTable;
+    Neuron?: INeuronTable;
 }
 
 export interface ISwcDatabaseModels {
@@ -29,7 +37,7 @@ export interface ISwcDatabaseModels {
 export interface ITransformDatabaseModels {
     Tracing?: any;
     TracingNode?: any;
-    BrainCompartmentContents?: any;
+    BrainCompartmentContents?: IBrainCompartmentTable;
 }
 
 export interface ISequelizeDatabase<T> {
@@ -60,7 +68,7 @@ export class PersistentStorageManager {
     }
 
     public get RegistrationTransforms() {
-        return this.sampleDatabase.models.RegistrationTransform;
+        return this.sampleDatabase.models.Transform;
     }
 
     public get Neurons() {
@@ -98,7 +106,7 @@ export class PersistentStorageManager {
     public async logQuery(queryObject: any, querySql: any, errors: any, duration: number) {
         try {
             if (this.influxDatabase) {
-                this.influxDatabase.writePoints([
+                await this.influxDatabase.writePoints([
                     {
                         measurement: "query_response_times",
                         tags: {user: "none"},
@@ -118,12 +126,12 @@ export class PersistentStorageManager {
     }
 
     public async initialize() {
-        this.sampleDatabase = await createSampleConnection();
+        await authenticate(this.sampleDatabase, "sample");
         await authenticate(this.swcDatabase, "swc");
         await authenticate(this.transformDatabase, "transform");
     }
 
-    private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels>;
+    private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels>= createConnection("sample", {});
     private swcDatabase: ISequelizeDatabase<ISwcDatabaseModels> = createConnection("swc", {});
     private transformDatabase: ISequelizeDatabase<ITransformDatabaseModels> = createConnection("transform", {});
     private influxDatabase = establishInfluxConnection();
@@ -151,14 +159,6 @@ async function authenticate(database, name) {
     }
 }
 
-async function createSampleConnection(): Promise<SampleConnector> {
-    const connector = new SampleConnector(DatabaseOptions.sample);
-
-    await connector.authenticate();
-
-    return connector;
-}
-
 function createConnection<T>(name: string, models: T) {
     let databaseConfig = DatabaseOptions[name];
 
@@ -176,31 +176,27 @@ function createConnection<T>(name: string, models: T) {
 }
 
 function establishInfluxConnection() {
-    if (DatabaseOptions["metrics"]) {
-        const databaseConfig = DatabaseOptions["metrics"];
+    const databaseConfig = DatabaseOptions.metrics;
 
-        return new Influx.InfluxDB({
-            host: databaseConfig.host,
-            port: databaseConfig.port,
-            database: databaseConfig.database,
-            schema: [
-                {
-                    measurement: "query_response_times",
-                    fields: {
-                        queryObject: Influx.FieldType.STRING,
-                        querySql: Influx.FieldType.STRING,
-                        errors: Influx.FieldType.STRING,
-                        duration: Influx.FieldType.INTEGER
-                    },
-                    tags: [
-                        "user"
-                    ]
-                }
-            ]
-        });
-    } else {
-        return null;
-    }
+    return new Influx.InfluxDB({
+        host: databaseConfig.host,
+        port: databaseConfig.port,
+        database: databaseConfig.database,
+        schema: [
+            {
+                measurement: "query_response_times",
+                fields: {
+                    queryObject: Influx.FieldType.STRING,
+                    querySql: Influx.FieldType.STRING,
+                    errors: Influx.FieldType.STRING,
+                    duration: Influx.FieldType.INTEGER
+                },
+                tags: [
+                    "user"
+                ]
+            }
+        ]
+    });
 }
 
 const _manager: PersistentStorageManager = new PersistentStorageManager();

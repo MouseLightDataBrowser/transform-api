@@ -1,5 +1,5 @@
 // Redirect for the benefit of .sequelizerc
 
-import {ServiceOptions} from "./serviceOptions";
+import {SequelizeOptions} from "./databaseOptions";
 
-module.exports = ServiceOptions.databaseOptions.transform;
+module.exports = SequelizeOptions.transform;

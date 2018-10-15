@@ -1,7 +1,8 @@
-import {IPageInput, validatePageInput} from "../../graphql/interfaces/page";
-import {IBrainArea} from "ndb-data-models";
+import {IBrainArea} from "../sample/brainArea";
+import {Instance, Model} from "sequelize";
+import {ITracing} from "./tracing";
 
-export interface ITracingNode {
+export interface ITracingNodeAttributes {
     id: string;
     tracingId: string;
     swcNodeId: string;
@@ -19,12 +20,27 @@ export interface ITracingNode {
     updatedAt: Date;
 }
 
+export interface IPageInput {
+    tracingId: string;
+    offset: number;
+    limit: number;
+}
+
 export interface INodePage {
     offset: number;
     limit: number;
     totalCount: number;
     hasNextPage: boolean;
-    nodes: ITracingNode[];
+    nodes: ITracingNodeAttributes[];
+}
+
+export interface ITracingNode extends Instance<ITracingNodeAttributes>, ITracingNodeAttributes {
+    tracing: ITracing;
+    getTracing(): ITracing;
+}
+
+export interface ITracingTableNode extends Model<ITracingNode, ITracingNodeAttributes> {
+    getNodePage(page: IPageInput): Promise<INodePage>;
 }
 
 export const TableName = "TracingNode";
@@ -50,14 +66,13 @@ export function sequelizeImport(sequelize, DataTypes) {
         swcNodeId: DataTypes.UUID,
         brainAreaId: DataTypes.UUID
     }, {
-        classMethods: {
-            associate: models => {
-                TracingNode.belongsTo(models.Tracing, {foreignKey: "tracingId"});
-            }
-        },
         timestamps: true,
         paranoid: false
     });
+
+    TracingNode.associate = models => {
+        TracingNode.belongsTo(models.Tracing, {foreignKey: "tracingId", as: "tracing"});
+    };
 
     TracingNode.getNodePage = async (page: IPageInput): Promise<INodePage> => {
         page = validatePageInput(page);
@@ -80,9 +95,30 @@ export function sequelizeImport(sequelize, DataTypes) {
             limit: page.limit,
             totalCount: result.count as number,
             hasNextPage: page.offset + page.limit < result.count,
-            nodes: result.rows as ITracingNode[]
+            nodes: result.rows as ITracingNodeAttributes[]
         }
     };
 
     return TracingNode;
+}
+
+const MAX_INT32 = Math.pow(2, 31) - 1;
+
+function validatePageInput(page: IPageInput): IPageInput {
+    let offset = 0;
+    let limit = MAX_INT32;
+
+    if (!page) {
+        return {tracingId: null, offset: offset, limit: limit};
+    }
+
+    if (page.offset === null || page.offset === undefined) {
+        page.offset = offset;
+    }
+
+    if (page.limit === null && page.limit === undefined) {
+        page.limit = limit;
+    }
+
+    return page;
 }

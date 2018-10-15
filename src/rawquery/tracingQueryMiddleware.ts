@@ -1,4 +1,4 @@
-import {PersistentStorageManager} from "../models/databaseConnector";
+import {PersistentStorageManager} from "../models/storageManager";
 
 export async function tracingQueryMiddleware(req, res) {
     const ts0 = process.hrtime();

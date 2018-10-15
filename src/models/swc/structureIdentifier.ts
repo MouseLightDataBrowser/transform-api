@@ -1,5 +1,3 @@
-const debug = require("debug")("mnb:transform:structure-identifier");
-
 export interface IStructureIdentifier {
     id: string;
     name: string;
@@ -30,75 +28,41 @@ export function sequelizeImport(sequelize, DataTypes) {
         value: DataTypes.INTEGER,
         mutable: {type: DataTypes.BOOLEAN, defaultValue: true}
     }, {
-        classMethods: {
-            associate: models => {
-                StructureIdentifier.hasMany(models.SwcTracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
-            }
-        },
         timestamps: true,
         paranoid: true
     });
 
-    const map = new Map<string, number>();
-    const reverseMap = new Map<number, String>();
+    StructureIdentifier.associate = (models) => {
+        StructureIdentifier.hasMany(models.SwcTracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
+    };
 
     StructureIdentifier.prepareContents = () => {
         StructureIdentifier.buildIdValueMap();
     };
 
+    const valueIdMap = new Map<number, string>();
+    const idValueMap = new Map<string, number>();
+
     StructureIdentifier.buildIdValueMap = async () => {
-        if (map.size === 0) {
+        if (valueIdMap.size === 0) {
             const all = await StructureIdentifier.findAll({});
             all.forEach(s => {
-                map.set(s.id, s.value);
-                reverseMap.set(s.value, s.id);
+                valueIdMap.set(s.value, s.id);
+                idValueMap.set(s.id, s.value);
             });
         }
     };
 
-    StructureIdentifier.idValue = (id: string) => {
-        return map.get(id);
+    StructureIdentifier.idForValue = (val: number) => {
+        return valueIdMap.get(val);
     };
 
-    StructureIdentifier.valueId = (value: number) => {
-        return reverseMap.get(value);
+    StructureIdentifier.valueForId = (id: string) => {
+        return idValueMap.get(id);
     };
 
     StructureIdentifier.structuresAreLoaded = () => {
-        return map.size > 0;
-    };
-
-    StructureIdentifier.countColumnName = (s: number | string | IStructureIdentifier) => {
-        if (s === null || s === undefined) {
-            return null;
-        }
-
-        let value: number = null;
-
-        if (typeof s === "number") {
-            value = s;
-        } else if (typeof s === "string") {
-            value = map.get(s);
-        } else {
-            value = s.value;
-        }
-
-        if (value === null || value === undefined) {
-            return null;
-        }
-
-        switch (value) {
-            case StructureIdentifiers.soma:
-                return "somaCount";
-            case StructureIdentifiers.undefined:
-                return "pathCount";
-            case StructureIdentifiers.forkPoint:
-                return "branchCount";
-            case  StructureIdentifiers.endPoint:
-                return "endCount";
-        }
-
-        return null;
+        return valueIdMap.size > 0;
     };
 
     return StructureIdentifier;

@@ -1,4 +1,7 @@
-export interface ISwcNode {
+import {IStructureIdentifier} from "./structureIdentifier";
+import {DataTypes, Instance, Model} from "sequelize";
+
+export interface ISwcNodeAttributes {
     id: string;
     swcTracingId: string;
     sampleNumber: number;
@@ -8,33 +11,41 @@ export interface ISwcNode {
     radius: number;
     parentNumber: number;
     structureIdentifierId: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+export interface ISwcNode extends Instance<ISwcNodeAttributes>, ISwcNodeAttributes {
+    getStructureIdentifier(): IStructureIdentifier;
+}
+
+export interface ISwcNodeTable extends Model<ISwcNode, ISwcNodeAttributes> {
 }
 
 export const TableName = "SwcTracingNode";
 
-export function sequelizeImport(sequelize, DataTypes) {
+export function sequelizeImport(sequelize, dataTypes: DataTypes) {
     const TracingNode = sequelize.define(TableName, {
         id: {
             primaryKey: true,
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4
+            type: dataTypes.UUID,
+            defaultValue: dataTypes.UUIDV4
         },
-        sampleNumber: DataTypes.INTEGER,
-        x: DataTypes.DOUBLE,
-        y: DataTypes.DOUBLE,
-        z: DataTypes.DOUBLE,
-        radius: DataTypes.DOUBLE,
-        parentNumber: DataTypes.INTEGER
+        sampleNumber: dataTypes.INTEGER,
+        x: dataTypes.DOUBLE,
+        y: dataTypes.DOUBLE,
+        z: dataTypes.DOUBLE,
+        radius: dataTypes.DOUBLE,
+        parentNumber: dataTypes.INTEGER
     }, {
-        classMethods: {
-            associate: models => {
-                TracingNode.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
-                TracingNode.belongsTo(models.SwcTracing, {foreignKey: "swcTracingId"});
-            }
-        },
         timestamps: true,
         paranoid: false
     });
+
+    TracingNode.associate = models => {
+        TracingNode.belongsTo(models.StructureIdentifier, {foreignKey: "structureIdentifierId"});
+        TracingNode.belongsTo(models.SwcTracing, {foreignKey: "swcTracingId"});
+    };
 
     return TracingNode;
 }

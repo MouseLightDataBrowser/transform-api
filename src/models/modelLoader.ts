@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-import {ISequelizeDatabase} from "./databaseConnector";
+import {ISequelizeDatabase} from "./storageManager";
 
 export function loadModels<T>(db: ISequelizeDatabase<T>, modelLocation: string) {
     fs.readdirSync(modelLocation).filter(file => {
