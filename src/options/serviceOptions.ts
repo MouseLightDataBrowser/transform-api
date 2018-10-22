@@ -12,7 +12,7 @@ export interface IServiceOptions {
 }
 
 const configuration: IServiceOptions = {
-    port: 9661,
+    port: 5000,
     graphQLEndpoint: "/graphql",
     graphiQlEndpoint: "/graphiql",
     ontologyPath: "/groups/mousebrainmicro/mousebrainmicro/registration/Allen Atlas/OntologyAtlas.h5",
