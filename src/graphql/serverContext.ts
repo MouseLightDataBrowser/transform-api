@@ -107,7 +107,7 @@ export class GraphQLServerContext {
     }
 
     public async getBrainAreas(ids: string[] = null): Promise<IBrainArea[]> {
-        if (!ids || ids.length == 0) {
+        if (!ids || ids.length === 0) {
             return this._storageManager.BrainAreas.findAll({});
         } else {
             // return _brainAreaDataLoader.loadMany(ids);

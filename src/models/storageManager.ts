@@ -131,7 +131,7 @@ export class PersistentStorageManager {
         await authenticate(this.transformDatabase, "transform");
     }
 
-    private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels>= createConnection("sample", {});
+    private sampleDatabase: ISequelizeDatabase<ISampleDatabaseModels> = createConnection("sample", {});
     private swcDatabase: ISequelizeDatabase<ISwcDatabaseModels> = createConnection("swc", {});
     private transformDatabase: ISequelizeDatabase<ITransformDatabaseModels> = createConnection("transform", {});
     private influxDatabase = establishInfluxConnection();

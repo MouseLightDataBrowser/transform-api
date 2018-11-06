@@ -107,7 +107,7 @@ type Tracing {
     transformStatus: TransformStatus
     firstNode: Node
     soma: Node
-    swcTracing: SwcTracing  
+    swcTracing: SwcTracing
     registrationTransform: RegistrationTransform
     tracingStructure: TracingStructure
     nodes(brainAreaIds: [String!]): [Node!]!
@@ -195,8 +195,8 @@ type QueryOutput {
     queryTime: Int
     nonce: String
     error: Error
-} 
-    
+}
+
 type Error {
     message: String
     name: String
@@ -250,48 +250,48 @@ input FilterInput {
 
 type Query {
     systemSettings: SystemSettings
-    
+
     queryOperators: [QueryOperator!]!
     brainAreas: [BrainArea!]!
     structureIdentifiers: [StructureIdentifier!]!
     tracingStructures: [TracingStructure!]!
-    
+
     swcTracings: [SwcTracing!]!
     swcTracing(id: String): SwcTracing!
-    
+
     tracings(queryInput: TracingsQueryInput): TracingPage!
     tracing(id: String): Tracing!
-    
+
     tracingsPage(filters: [FilterInput!]): TracingQueryPage
-    
+
     queryData(filters: [FilterInput!]): QueryOutput
-    
+
     tracingNodePage(page: PageInput): NodePage
     tracingNodePage2(page: PageInput, filters: [FilterInput!]): NodePage
-    
+
     brainCompartmentContents: [BrainCompartmentContent!]!
-    
+
     untransformedSwc: [SwcTracing!]!
-    
+
     systemMessage: String
 }
 
 type Mutation {
-   applyTransform(swcId: String!): TransformMutationResult
-   reapplyTransform(id: String!): TransformMutationResult
-   
-   reapplyTransforms: TransformMutationResult
-   
-   deleteTracings(tracingIds: [String!]): [DeleteTracingOutput!]
-   deleteTracingsForSwc(swcTracingIds: [String!]): [DeleteTracingOutput!]
-   
-   requestExport(tracingIds: [String!], format: Int): [RequestExportOutput]
-   
-   setSystemMessage(message: String): Boolean
-   clearSystemMessage: Boolean
+    applyTransform(swcId: String!): TransformMutationResult
+    reapplyTransform(id: String!): TransformMutationResult
+
+    reapplyTransforms: TransformMutationResult
+
+    deleteTracings(tracingIds: [String!]): [DeleteTracingOutput!]
+    deleteTracingsForSwc(swcTracingIds: [String!]): [DeleteTracingOutput!]
+
+    requestExport(tracingIds: [String!], format: Int): [RequestExportOutput]
+
+    setSystemMessage(message: String): Boolean
+    clearSystemMessage: Boolean
 }
 
 schema {
-  query: Query
-  mutation: Mutation
+    query: Query
+    mutation: Mutation
 }`;
