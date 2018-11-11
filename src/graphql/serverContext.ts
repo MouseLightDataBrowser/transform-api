@@ -558,6 +558,7 @@ export class GraphQLServerContext {
         return this.deleteTracings(tracingIds);
     }
 
+    // TODO Remove export when newly uploaded tracings are viewable outside of the "green" browser
     public async requestExport(tracingIds: string[], format: ExportFormat): Promise<IRequestExportOutput[]> {
         if (!tracingIds || tracingIds.length === 0) {
             return [];

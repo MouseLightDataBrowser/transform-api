@@ -7,7 +7,6 @@
   },
   "exclude": [
     "migrations",
-    "gulpfile.ts",
-    "node_modules"
+    "gulpfile.ts"
   ]
 }
