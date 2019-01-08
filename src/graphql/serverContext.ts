@@ -310,7 +310,7 @@ export class GraphQLServerContext {
     public async getSoma(tracing: ITracingAttributes): Promise<ITracingNodeAttributes> {
         return await this._storageManager.Nodes.findOne({
             where: {
-                structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma),
+                structureIdentifierId: this._storageManager.StructureIdentifiers.idForValue(StructureIdentifiers.soma),
                 tracingId: tracing.id
             }
         });
@@ -360,7 +360,7 @@ export class GraphQLServerContext {
             return [];
         }
 
-        const undefinedStructureId = this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.undefined);
+        const undefinedStructureId = this._storageManager.StructureIdentifiers.idForValue(StructureIdentifiers.undefined);
 
         let nodes = await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
 
@@ -786,7 +786,7 @@ export class GraphQLServerContext {
                 const somaPromises: [Promise<ITracingNodeAttributes>] = tracings.map(async (tracing) => {
                     return this._storageManager.Nodes.findOne({
                         where: {
-                            structureIdentifierId: this._storageManager.StructureIdentifiers.valueId(StructureIdentifiers.soma),
+                            structureIdentifierId: this._storageManager.StructureIdentifiers.idForValue(StructureIdentifiers.soma),
                             tracingId: tracing.id
                         }
                     });

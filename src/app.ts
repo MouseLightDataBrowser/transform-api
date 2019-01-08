@@ -1,4 +1,5 @@
 import * as express from "express";
+import * as bodyParser from "body-parser";
 import * as os from "os";
 import {ApolloServer} from "apollo-server-express";
 
@@ -11,6 +12,10 @@ import resolvers from "./graphql/serverResolvers";
 import {GraphQLServerContext} from "./graphql/serverContext";
 
 const app = express();
+
+app.use(bodyParser.urlencoded({extended: true}));
+
+app.use(bodyParser.json());
 
 const server = new ApolloServer({
     typeDefs: typeDefinitions, resolvers,

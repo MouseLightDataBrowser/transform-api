@@ -1,3 +1,6 @@
+import * as Sequelize from "sequelize";
+
+const Op = Sequelize.Op;
 import {PersistentStorageManager} from "../models/storageManager";
 
 export async function tracingQueryMiddleware(req, res) {
@@ -11,7 +14,7 @@ export async function tracingQueryMiddleware(req, res) {
 
     if (ids && ids.length > 0) {
         tracings = await PersistentStorageManager.Instance().Tracings.findAll({
-            where: {id: {$in: ids}},
+            where: {id: {[Op.in]: ids}},
             include: [{model: PersistentStorageManager.Instance().Nodes, as: "nodes"}]
         });
     } else {
