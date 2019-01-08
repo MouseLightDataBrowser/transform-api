@@ -718,7 +718,7 @@ export class GraphQLServerContext {
         } else {
             opCode = Op.gt;
             amount = 0;
-            debug(`operator is null, using opCode ${opCode} for amount ${amount}`);
+            debug(`operator is null, using opCode ${opCode.operator2} for amount ${amount}`);
         }
 
         if (opCode) {
