@@ -1,16 +1,18 @@
 import * as path from "path";
-import {operatorIdValueMap} from "../models/search/queryOperator";
-import {Op} from "sequelize";
-import * as Archiver from "archiver";
-
-const _ = require("lodash");
-import {FindOptions} from "sequelize";
+import * as Sequelize from "sequelize";
+import * as fs from "fs";
+import * as sanitize from "sanitize-filename";
+import * as uuid from "uuid";
 import * as DataLoader from "dataloader";
-
-import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
+const _ = require("lodash");
+import * as Archiver from "archiver";
+const Op = Sequelize.Op;
+import {FindOptions} from "sequelize";
+import {isNullOrUndefined} from "util";
 
 const debug = require("debug")("mnb:transform:context");
 
+import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 import {PersistentStorageManager} from "../models/storageManager";
 import {ISwcTracing} from "../models/swc/tracing";
 import {ExportFormat, ITracingAttributes} from "../models/transform/tracing";
@@ -20,13 +22,11 @@ import {ITransformResult, TransformManager} from "../transform/transformManager"
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
 import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
-import {isNullOrUndefined} from "util";
-import * as fs from "fs";
-import * as sanitize from "sanitize-filename";
-import * as uuid from "uuid";
 import {INeuron} from "../models/sample/neuron";
 import {IBrainArea} from "../models/sample/brainArea";
 import {ITransform} from "../models/sample/transform";
+
+import {operatorIdValueMap} from "../models/search/queryOperator";
 
 export interface ITracingsQueryInput {
     offset?: number;
@@ -658,7 +658,7 @@ export class GraphQLServerContext {
     private async queryForCompartmentFilter(filter: IFilterInput): Promise<FindOptions<IBrainCompartmentAttributes>> {
         let query: FindOptions<IBrainCompartmentAttributes> = {
             where: {},
-            include: [this._storageManager.Tracings]
+            include: [{model: this._storageManager.Tracings, as: "tracing"}]
         };
 
         let swcStructureMatchIds = [];
@@ -680,6 +680,7 @@ export class GraphQLServerContext {
         if (swcStructureMatchIds.length > 0) {
             query.include = [{
                 model: this._storageManager.Tracings,
+                as: "tracing",
                 where: {swcTracingId: {[Op.in]: swcStructureMatchIds}}
             }];
         }
@@ -710,12 +711,12 @@ export class GraphQLServerContext {
         if (filter.operatorId && filter.operatorId.length > 0) {
             const operator = operatorIdValueMap().get(filter.operatorId);
             if (operator) {
-                opCode = operator.operator;
+                opCode = operator.operatorSymbol;
             }
             amount = filter.amount;
-            debug(`found operator ${operator} with opCode ${opCode} for amount ${amount}`);
+            debug(`found operator ${operator} with opCode ${operator.operator2} for amount ${amount}`);
         } else {
-            opCode = "$gt";
+            opCode = Op.gt;
             amount = 0;
             debug(`operator is null, using opCode ${opCode} for amount ${amount}`);
         }
@@ -904,6 +905,7 @@ export class GraphQLServerContext {
 
                 ql["include"] = [{
                     model: "Tracings",
+                    as: "tracing",
                     where: include.where
                 }];
             }
@@ -958,7 +960,7 @@ function createDeletedTracingOutput(id: string, swcTracingId: string, error = nu
     return {id, swcTracingId, error};
 }
 
-function createOperator(operator: string, amount: number) {
+function createOperator(operator: symbol, amount: number) {
     let obj = {};
     obj[operator] = amount;
 
