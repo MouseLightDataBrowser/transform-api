@@ -1,12 +1,18 @@
 import * as Sequelize from "sequelize";
 
+const debug = require("debug")("mnb:transform:tracing-middleware");
+
 const Op = Sequelize.Op;
+
 import {PersistentStorageManager} from "../models/storageManager";
 
 export async function tracingQueryMiddleware(req, res) {
     const ts0 = process.hrtime();
 
     const ids = req.body.ids;
+
+    debug(`requested ids:`);
+    debug(ids);
 
     let tracings = [];
 
@@ -25,6 +31,9 @@ export async function tracingQueryMiddleware(req, res) {
             }]
         });
     }
+
+    debug(`loading tracing ids:`);
+    debug(tracings.map(t => t.id));
 
     const te1 = process.hrtime(ts1);
 
@@ -46,6 +55,8 @@ export async function tracingQueryMiddleware(req, res) {
 
         return obj;
     });
+
+    debug(`response mapped`);
 
     const te2 = process.hrtime(ts2);
 
