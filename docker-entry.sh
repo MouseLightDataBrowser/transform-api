@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
 
-logName=$(date '+%Y-%m-%d_%H-%M-%S');
+logPrefix="transform-api"
 
-mkdir -p /var/log/mnb
+logBase=/var/log/mnb
 
-./migrate.sh &> /var/log/mnb/transform-api-${logName}.log
+logName=$(date '+%Y-%m-%d_%H-%M-%S')
+
+logFile=${logPrefix}-${logName}.log
+
+logPath=${logBase}/${logFile}
+
+mkdir -p ${logBase}
+
+touch ${logPath}
+
+chown mluser:mousebrainmicro ${logPath}
+
+./migrate.sh &> ${logPath}
 
 wait
 
@@ -12,4 +24,4 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
 
 export DEBUG=mnb*
 
-node --max-old-space-size=8192 --optimize-for-size app.js >> /var/log/mnb/transform-api-${logName}.log 2>&1
+node --max-old-space-size=8192 --optimize-for-size app.js >> ${logPath} 2>&1
