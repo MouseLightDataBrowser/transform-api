@@ -9,6 +9,7 @@ import * as Archiver from "archiver";
 const Op = Sequelize.Op;
 import {FindOptions} from "sequelize";
 import {isNullOrUndefined} from "util";
+const json = require('big-json');
 
 const debug = require("debug")("mnb:transform:context");
 
@@ -226,6 +227,7 @@ export class GraphQLServerContext {
                 out.limit = queryInput.limit;
             }
         } else {
+            options["order"] = [["nodeCount", "DESC"]];
             out.matchCount = out.totalCount;
         }
 
@@ -341,14 +343,41 @@ export class GraphQLServerContext {
             return [];
         }
 
+        debug(`fetching nodes`);
         let r = await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
 
+
+        debug(`mapping brain areas`);
 
         r = await Promise.all(r.map(async (o) => {
             o.brainArea = await this.getNodeBrainArea(o);
 
             return o;
         }));
+
+        debug(`done`);
+
+
+        const stringifyStream = json.createStringifyStream({
+            body: r
+        });
+
+        const writeStream = fs.createWriteStream("a73e8182-07e3-4517-93fe-9789b3e2e64a.json");
+
+        stringifyStream.on('data', function(strChunk) {
+            writeStream.write(strChunk);
+        });
+
+        stringifyStream.on('finish', function() {
+            writeStream.close();
+        });
+
+
+        stringifyStream.on('close', function() {
+            writeStream.close();
+        });
+
+        debug(`exiting`);
 
         return r;
 
