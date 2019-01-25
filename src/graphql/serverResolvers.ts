@@ -1,7 +1,7 @@
 import {
     IDeleteTracingOutput, GraphQLServerContext, IQueryDataPage, IRequestExportOutput, ITracingPage,
     ICompartmentQueryOutputPage,
-    ITracingsQueryInput
+    ITracingsQueryInput, getNodeBrainArea
 } from "./serverContext";
 
 const debug = require("debug")("mnb:transform:resolvers");
@@ -194,10 +194,10 @@ const resolvers = {
             return context.getSoma(tracing);
         },
         nodes(tracing: ITracingAttributes, args: ITracingNodesArguments, context: GraphQLServerContext): Promise<ITracingNodeAttributes[]> {
-            return context.getNodes(tracing, args.brainAreaIds);
+            return context.getNodes(tracing);
         },
         keyNodes(tracing: ITracingAttributes, args: ITracingNodesArguments, context: GraphQLServerContext): Promise<ITracingNodeAttributes[]> {
-            return context.getKeyNodes(tracing, args.brainAreaIds);
+            return context.getKeyNodes(tracing);
         },
         transformStatus(tracing): ITransformProgress {
             return TransformManager.Instance().statusForTracing(tracing);
@@ -213,8 +213,8 @@ const resolvers = {
         structureIdValue(node: ITracingNodeAttributes, _, context: GraphQLServerContext): number {
             return context.getStructureIdValue(node.structureIdentifierId);
         },
-        brainArea(node, _, context: GraphQLServerContext): Promise<IBrainArea> {
-            return context.getNodeBrainArea(node);
+        brainArea(node): IBrainArea {
+            return getNodeBrainArea(node);
         }
     },
     SwcTracing: {

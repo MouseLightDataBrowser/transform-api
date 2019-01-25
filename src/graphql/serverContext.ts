@@ -3,13 +3,10 @@ import * as Sequelize from "sequelize";
 import * as fs from "fs";
 import * as sanitize from "sanitize-filename";
 import * as uuid from "uuid";
-import * as DataLoader from "dataloader";
 const _ = require("lodash");
 import * as Archiver from "archiver";
 const Op = Sequelize.Op;
 import {FindOptions} from "sequelize";
-import {isNullOrUndefined} from "util";
-const json = require('big-json');
 
 const debug = require("debug")("mnb:transform:context");
 
@@ -85,15 +82,33 @@ export enum FilterComposition {
 
 const _storageManager = PersistentStorageManager.Instance();
 
+const _brainAreaMap = new Map<string, IBrainArea>();
+
+_storageManager.BrainAreas.findAll().then((areas) => {
+    areas.map(a => _brainAreaMap.set(a.id, a));
+});
+
+export const getNodeBrainArea = (node: ITracingNodeAttributes): IBrainArea => {
+    if (node.brainAreaId) {
+        return _brainAreaMap.get(node.brainAreaId);
+    } else {
+        return null;
+    }
+};
+
+
+/*
 const _brainAreaDataLoader = new DataLoader<string, IBrainArea>(async (ids: string[]) => {
     // Does not return in same order as data loader provides.
     const areas = await _storageManager.BrainAreas.findAll({where: {id: {[Op.in]: ids}}});
 
     return ids.map(id => areas.find(a => a.id === id));
 });
+*/
 
 export class GraphQLServerContext {
     private _storageManager = PersistentStorageManager.Instance();
+
 
     public async getStructureIdentifiers(): Promise<IStructureIdentifier[]> {
         return this._storageManager.StructureIdentifiers.findAll({});
@@ -338,53 +353,15 @@ export class GraphQLServerContext {
         return result;
     }
 
-    public async getNodes(tracing: ITracingAttributes, brainAreaIds: string[]): Promise<ITracingNodeAttributes[]> {
+    public async getNodes(tracing: ITracingAttributes): Promise<ITracingNodeAttributes[]> {
         if (!tracing || !tracing.id) {
             return [];
         }
 
-        debug(`fetching nodes`);
-        let r = await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
-
-
-        debug(`mapping brain areas`);
-
-        r = await Promise.all(r.map(async (o) => {
-            o.brainArea = await this.getNodeBrainArea(o);
-
-            return o;
-        }));
-
-        debug(`done`);
-
-
-        const stringifyStream = json.createStringifyStream({
-            body: r
-        });
-
-        const writeStream = fs.createWriteStream("a73e8182-07e3-4517-93fe-9789b3e2e64a.json");
-
-        stringifyStream.on('data', function(strChunk) {
-            writeStream.write(strChunk);
-        });
-
-        stringifyStream.on('finish', function() {
-            writeStream.close();
-        });
-
-
-        stringifyStream.on('close', function() {
-            writeStream.close();
-        });
-
-        debug(`exiting`);
-
-        return r;
-
-        // return this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
+        return await this._storageManager.Nodes.findAll({where: {tracingId: tracing.id}});
     }
 
-    public async getKeyNodes(tracing: ITracingAttributes, brainAreaIds: string[]): Promise<ITracingNodeAttributes[]> {
+    public async getKeyNodes(tracing: ITracingAttributes): Promise<ITracingNodeAttributes[]> {
         if (!tracing || !tracing.id) {
             return [];
         }
@@ -493,16 +470,7 @@ export class GraphQLServerContext {
         return {tracing: null, errors: [`Could not locate registered tracing`]};
     }
 
-    public async getNodeBrainArea(node: ITracingNodeAttributes): Promise<IBrainArea> {
-        if (node.brainAreaId) {
-            return _brainAreaDataLoader.load(node.brainAreaId);
-            // return this._storageManager.BrainAreas.findById(node.brainAreaId);
-        } else {
-            return null;
-        }
-    }
-
-    public async getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier> {
+     public async getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier> {
         return this._storageManager.StructureIdentifiers.findOne({where: {id: node.structureIdentifierId}})
     }
 
@@ -848,7 +816,7 @@ export class GraphQLServerContext {
                 const nIdx = neuronLookup.indexOf(swcTracing.neuronId);
                 const neuron = neurons[nIdx];
 
-                if (isNullOrUndefined(neuron.tracings)) {
+                if (neuron.tracings === undefined || neuron.tracings === null) {
                     neuron.tracings = [];
                 }
 
