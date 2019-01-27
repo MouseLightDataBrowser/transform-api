@@ -7,7 +7,7 @@ import {
 const debug = require("debug")("mnb:transform:resolvers");
 
 import {ISwcTracing} from "../models/swc/tracing";
-import {ExportFormat, ITracingAttributes} from "../models/transform/tracing";
+import {ExportFormat, ITracing, ITracingAttributes} from "../models/transform/tracing";
 import {ITracingNodeAttributes, INodePage, IPageInput} from "../models/transform/tracingNode";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {TransformManager, ITransformProgress, ITransformResult} from "../transform/transformManager";
@@ -17,7 +17,7 @@ import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentC
 import {IQueryOperator, operators} from "../models/search/queryOperator";
 import {ServiceOptions} from "../options/serviceOptions";
 import {IBrainArea} from "../models/sample/brainArea";
-import {INeuron} from "../models/sample/neuron";
+import {INeuron, INeuronAttributes} from "../models/sample/neuron";
 import {ITransform} from "../models/sample/transform";
 
 interface IIdOnlyArguments {
@@ -98,6 +98,12 @@ const resolvers = {
         tracingStructures(_, __, context: GraphQLServerContext): Promise<ITracingStructure[]> {
             return context.getTracingStructures();
         },
+        neuron(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<INeuron> {
+            return context.getNeuron(args.id);
+        },
+        neurons(_, __, context: GraphQLServerContext): Promise<INeuron[]> {
+            return context.getNeurons();
+        },
         swcTracings(_, __, context: GraphQLServerContext): Promise<ISwcTracing[]> {
             return context.getSwcTracings();
         },
@@ -173,6 +179,14 @@ const resolvers = {
 
             return true;
         }
+    },
+    Neuron: {
+        brainArea(neuron: INeuron, _, context: GraphQLServerContext): Promise<IBrainArea> {
+            return context.getNeuronBrainArea(neuron);
+        },
+        tracings(neuron: INeuron, _, context: GraphQLServerContext): Promise<ITracing[]> {
+            return context.getNeuronTracings(neuron);
+        },
     },
     Tracing: {
         swcTracing(tracing: ITracingAttributes, _, context: GraphQLServerContext): Promise<ISwcTracing> {

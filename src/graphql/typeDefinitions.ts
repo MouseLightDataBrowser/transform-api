@@ -255,6 +255,9 @@ type Query {
     brainAreas: [BrainArea!]!
     structureIdentifiers: [StructureIdentifier!]!
     tracingStructures: [TracingStructure!]!
+    
+    neuron(id: String): Neuron
+    neurons: [Neuron!]!
 
     swcTracings: [SwcTracing!]!
     swcTracing(id: String): SwcTracing!

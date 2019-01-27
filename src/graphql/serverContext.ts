@@ -3,8 +3,10 @@ import * as Sequelize from "sequelize";
 import * as fs from "fs";
 import * as sanitize from "sanitize-filename";
 import * as uuid from "uuid";
+
 const _ = require("lodash");
 import * as Archiver from "archiver";
+
 const Op = Sequelize.Op;
 import {FindOptions} from "sequelize";
 
@@ -13,14 +15,14 @@ const debug = require("debug")("mnb:transform:context");
 import {IStructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 import {PersistentStorageManager} from "../models/storageManager";
 import {ISwcTracing} from "../models/swc/tracing";
-import {ExportFormat, ITracingAttributes} from "../models/transform/tracing";
+import {ExportFormat, ITracing, ITracingAttributes} from "../models/transform/tracing";
 import {ISwcNode} from "../models/swc/tracingNode";
 import {ITracingNodeAttributes, INodePage, IPageInput} from "../models/transform/tracingNode";
 import {ITransformResult, TransformManager} from "../transform/transformManager";
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
 import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
-import {INeuron} from "../models/sample/neuron";
+import {INeuron, INeuronAttributes} from "../models/sample/neuron";
 import {IBrainArea} from "../models/sample/brainArea";
 import {ITransform} from "../models/sample/transform";
 
@@ -165,17 +167,34 @@ export class GraphQLServerContext {
     }
 
     public async getNeuron(id: string): Promise<INeuron> {
-        const n = await this._storageManager.Neurons.findById(id);
+        return this._storageManager.Neurons.findById(id);
+    }
 
-        if (n.brainAreaId) {
-            n.brainArea = await this.getBrainArea(n.brainAreaId);
+    public async getNeurons(): Promise<INeuron[]> {
+        return this._storageManager.Neurons.findAll();
+    }
+
+    public async getNeuronBrainArea(neuron: INeuron): Promise<IBrainArea> {
+        let brainArea = null;
+
+        if (neuron.brainAreaId) {
+            brainArea = await this.getBrainArea(neuron.brainAreaId);
         } else {
-            const i = await n.getInjection();
+            const i = await neuron.getInjection();
 
-            n.brainArea = await this.getBrainArea(i.brainAreaId);
+            brainArea = await this.getBrainArea(i.brainAreaId);
         }
 
-        return n;
+        return brainArea;
+    }
+
+    public async getNeuronTracings(neuron: INeuron): Promise<ITracing[]> {
+        const swc = await this._storageManager.SwcTracings.findAll({
+            where: {neuronId: {[Op.eq]: neuron.id}},
+            attributes: ["id"]
+        });
+
+        return this._storageManager.Tracings.findAll({where: {swcTracingId: {[Op.in]: swc.map(s => s.id)}}});
     }
 
     public async getRegistrationTransform(id: string): Promise<ITransform> {
@@ -470,7 +489,7 @@ export class GraphQLServerContext {
         return {tracing: null, errors: [`Could not locate registered tracing`]};
     }
 
-     public async getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier> {
+    public async getSwcNodeStructureIdentifier(node: ISwcNode): Promise<IStructureIdentifier> {
         return this._storageManager.StructureIdentifiers.findOne({where: {id: node.structureIdentifierId}})
     }
 
@@ -831,7 +850,7 @@ export class GraphQLServerContext {
         let neurons = await neuronResults.reduce((prev, curr, index) => {
             if (index === 0 || filters[index].composition === FilterComposition.or) {
                 return _.uniqBy(prev.concat(curr), "id");
-            } else if  (filters[index].composition === FilterComposition.and) {
+            } else if (filters[index].composition === FilterComposition.and) {
                 return _.uniqBy(_.intersectionBy(prev, curr, "id"), "id");
             } else {
                 // Not
