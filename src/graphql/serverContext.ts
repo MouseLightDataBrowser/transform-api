@@ -22,7 +22,7 @@ import {ITransformResult, TransformManager} from "../transform/transformManager"
 import {ITracingStructure} from "../models/swc/tracingStructure";
 import {IFilterInput} from "./serverResolvers";
 import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
-import {INeuron, INeuronAttributes} from "../models/sample/neuron";
+import {INeuron} from "../models/sample/neuron";
 import {IBrainArea} from "../models/sample/brainArea";
 import {ITransform} from "../models/sample/transform";
 
@@ -188,9 +188,9 @@ export class GraphQLServerContext {
         return brainArea;
     }
 
-    public async getNeuronTracings(neuron: INeuron): Promise<ITracing[]> {
+    public async getNeuronTracings(neuronId: string): Promise<ITracing[]> {
         const swc = await this._storageManager.SwcTracings.findAll({
-            where: {neuronId: {[Op.eq]: neuron.id}},
+            where: {neuronId: {[Op.eq]: neuronId}},
             attributes: ["id"]
         });
 
@@ -274,7 +274,7 @@ export class GraphQLServerContext {
         return out;
     }
 
-    public async getTracing(id: string): Promise<ITracingAttributes> {
+    public async getTracing(id: string): Promise<ITracing> {
         return this._storageManager.Tracings.findById(id);
     }
 

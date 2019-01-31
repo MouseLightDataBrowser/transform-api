@@ -17,7 +17,7 @@ import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentC
 import {IQueryOperator, operators} from "../models/search/queryOperator";
 import {ServiceOptions} from "../options/serviceOptions";
 import {IBrainArea} from "../models/sample/brainArea";
-import {INeuron, INeuronAttributes} from "../models/sample/neuron";
+import {INeuron} from "../models/sample/neuron";
 import {ITransform} from "../models/sample/transform";
 
 interface IIdOnlyArguments {
@@ -110,11 +110,14 @@ const resolvers = {
         swcTracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ISwcTracing> {
             return context.getSwcTracing(args.id);
         },
+        tracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ITracing> {
+            return context.getTracing(args.id);
+        },
         tracings(_, args: ITracingsArguments, context: GraphQLServerContext): Promise<ITracingPage> {
             return context.getTracings(args.queryInput);
         },
-        tracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ITracingAttributes> {
-            return context.getTracing(args.id);
+        tracingsForNeuron(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ITracing[]> {
+            return context.getNeuronTracings(args.id);
         },
         tracingsPage(_, args: ITracingsPageArguments, context: GraphQLServerContext): Promise<ICompartmentQueryOutputPage> {
             try {
@@ -185,7 +188,7 @@ const resolvers = {
             return context.getNeuronBrainArea(neuron);
         },
         tracings(neuron: INeuron, _, context: GraphQLServerContext): Promise<ITracing[]> {
-            return context.getNeuronTracings(neuron);
+            return context.getNeuronTracings(neuron.id);
         },
     },
     Tracing: {

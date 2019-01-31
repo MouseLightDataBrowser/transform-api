@@ -250,7 +250,7 @@ input FilterInput {
 
 type Query {
     systemSettings: SystemSettings
-
+ 
     queryOperators: [QueryOperator!]!
     brainAreas: [BrainArea!]!
     structureIdentifiers: [StructureIdentifier!]!
@@ -262,6 +262,7 @@ type Query {
     swcTracings: [SwcTracing!]!
     swcTracing(id: String): SwcTracing!
 
+    tracingsForNeuron(id: String): [Tracing!]!
     tracings(queryInput: TracingsQueryInput): TracingPage!
     tracing(id: String): Tracing!
 
