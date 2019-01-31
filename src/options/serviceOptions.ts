@@ -5,7 +5,6 @@ import * as path from "path";
 export interface IServiceOptions {
     port: number;
     graphQLEndpoint: string;
-    graphiQlEndpoint: string;
     ontologyPath: string;
     release: string;
     version: string;
@@ -14,7 +13,6 @@ export interface IServiceOptions {
 const configuration: IServiceOptions = {
     port: 5000,
     graphQLEndpoint: "/graphql",
-    graphiQlEndpoint: "/graphiql",
     ontologyPath: "/groups/mousebrainmicro/mousebrainmicro/registration/Allen Atlas/OntologyAtlas.h5",
     release: "public",
     version: ""
