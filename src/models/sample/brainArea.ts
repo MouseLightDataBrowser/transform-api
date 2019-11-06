@@ -1,42 +1,102 @@
-import {DataTypes, Instance, Model, Models} from "sequelize";
+import {Sequelize, DataTypes, HasManyGetAssociationsMixin, FindOptions} from "sequelize";
 
-import {IInjectionAttributes} from "./injection";
-import {INeuronAttributes} from "./neuron";
+import {BaseModel, EntityMutateOutput, EntityQueryInput} from "../baseModel";
+import {Injection} from "./injection";
+import {Neuron} from "./neuron";
+import {
+    optionsIncludeInjectionIds,
+    optionsIncludeNeuronIds,
+    optionsWhereIds,
+    WithInjectionsQueryInput,
+    WithNeuronsQueryInput
+} from "../findOptions";
+import {TracingNode} from "../transform/tracingNode";
 
-export interface IBrainAreaAttributes {
+export type CompartmentQueryInput = EntityQueryInput & WithInjectionsQueryInput & WithNeuronsQueryInput;
+
+export type CompartmentMutationData = {
     id: string;
-    structureId?: number;
-    depth?: number;
-    name?: string;
-    parentStructureId?: number;
-    structureIdPath?: string;
-    safeName?: string;
-    acronym?: string;
-    atlasId?: number;
-    aliases?: string[];
-    graphId?: number;
-    graphOrder?: number;
-    hemisphereId?: number;
-    geometryFile?: string;
-    geometryColor?: string;
-    geometryEnable?: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
+    aliasList: string[];
 }
 
-export interface IBrainArea extends Instance<IBrainAreaAttributes>, IBrainAreaAttributes {
-    getInjections(): IInjectionAttributes[];
-    getNeurons(): INeuronAttributes[];
+export class BrainArea extends BaseModel {
+    public structureId: number;
+    public depth: number;
+    public name: string;
+    public parentStructureId: number;
+    public structureIdPath: string;
+    public safeName: string;
+    public acronym: string;
+    public atlasId: number;
+    public aliases: string[];
+    public graphId: number;
+    public graphOrder: number;
+    public hemisphereId: number;
+    public geometryFile: string;
+    public geometryColor: string;
+    public geometryEnable: boolean;
+
+    public aliasList: string[];
+
+    public getInjections!: HasManyGetAssociationsMixin<Injection>;
+    public getNeurons!: HasManyGetAssociationsMixin<Neuron>;
+
+    public static async getAll(input: CompartmentQueryInput): Promise<BrainArea[]> {
+        let options: FindOptions = optionsWhereIds(input);
+
+        options = optionsIncludeInjectionIds(input, options);
+        options = optionsIncludeNeuronIds(input, options);
+
+        await this.setSortAndLimiting(options, input);
+
+        return BrainArea.findAll(options);
+    }
+
+    public static async updateWith(input: CompartmentMutationData): Promise<EntityMutateOutput<BrainArea>> {
+        try {
+            if (!input) {
+                return {source: null, error: "Brain area properties are a required input"};
+            }
+
+            if (!input.id) {
+                return {source: null, error: "Brain area input must contain the id of the object to update"};
+            }
+
+            let row = await BrainArea.findByPk(input.id);
+
+            if (!row) {
+                return {source: null, error: "The brain area could not be found"};
+            }
+
+            const update = await row.update(input);
+
+            return {source: update, error: null};
+        } catch (error) {
+            return {source: null, error: error.message};
+        }
+    }
+
+    protected static defaultSortField(): string {
+        return "depth";
+    }
+
+
+    private static _brainAreaMap = new Map<string, BrainArea>();
+
+    public static async getNodeBrainArea(node: TracingNode): Promise<BrainArea> {
+        if (this._brainAreaMap.size === 0) {
+            (await BrainArea.findAll()).map(a => this._brainAreaMap.set(a.id, a));
+        }
+        if (node.brainAreaId) {
+            return this._brainAreaMap.get(node.brainAreaId);
+        } else {
+            return null;
+        }
+    }
 }
 
-export interface IBrainAreaTable extends Model<IBrainArea, IBrainAreaAttributes> {
-}
-
-export const TableName = "BrainArea";
-
-// noinspection JSUnusedGlobalSymbols
-export function sequelizeImport(sequelize, DataTypes: DataTypes): IBrainAreaTable {
-    const BrainArea: IBrainAreaTable = sequelize.define(TableName, {
+export const modelInit = (sequelize: Sequelize) => {
+    BrainArea.init({
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
@@ -49,40 +109,35 @@ export function sequelizeImport(sequelize, DataTypes: DataTypes): IBrainAreaTabl
         structureIdPath: DataTypes.TEXT,
         safeName: DataTypes.TEXT,
         acronym: DataTypes.TEXT,
-        aliases: {
-            type: DataTypes.TEXT
-        },
+        aliases: DataTypes.TEXT,
         atlasId: DataTypes.INTEGER,
         graphId: DataTypes.INTEGER,
         graphOrder: DataTypes.INTEGER,
         hemisphereId: DataTypes.INTEGER,
         geometryFile: DataTypes.TEXT,
         geometryColor: DataTypes.TEXT,
-        geometryEnable: DataTypes.BOOLEAN
-    }, {
-        getterMethods: {
-            aliases: function () {
+        geometryEnable: DataTypes.BOOLEAN,
+        aliasList: {
+            type: DataTypes.VIRTUAL(DataTypes.ARRAY(DataTypes.STRING), ["aliases"]),
+            get: function (): string[] {
                 return JSON.parse(this.getDataValue("aliases")) || [];
-            }
-        },
-        setterMethods: {
-            aliases: function (value) {
+            },
+            set: function (value: string[]) {
                 if (value && value.length === 0) {
                     value = null;
                 }
 
                 this.setDataValue("aliases", JSON.stringify(value));
             }
-        },
+        }
+    }, {
         timestamps: true,
-        paranoid: true
+        paranoid: true,
+        sequelize
     });
+};
 
-    BrainArea.associate = (models: Models) => {
-        BrainArea.hasMany(models.Injection, {foreignKey: "brainAreaId", as: "injections"});
-        BrainArea.hasMany(models.Neuron, {foreignKey: "brainAreaId", as: "neurons"});
-    };
-
-    return BrainArea;
-}
-
+export const modelAssociate = () => {
+    BrainArea.hasMany(Injection, {foreignKey: "brainAreaId"});
+    BrainArea.hasMany(Neuron, {foreignKey: "brainAreaId"});
+};

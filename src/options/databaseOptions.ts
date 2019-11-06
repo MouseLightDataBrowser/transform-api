@@ -1,3 +1,5 @@
+import {Dialect} from "sequelize";
+
 const services = {
     database: {
         sample: {
@@ -6,8 +8,7 @@ const services = {
             password: "pgsecret",
             host: "sample-db",
             port: 5432,
-            dialect: "postgres",
-            operatorsAliases: false,
+            dialect: "postgres" as Dialect,
             logging: null
         },
         swc: {
@@ -16,8 +17,7 @@ const services = {
             password: "pgsecret",
             host: "swc-db",
             port: 5432,
-            dialect: "postgres",
-            operatorsAliases: false,
+            dialect: "postgres" as Dialect,
             logging: null
         },
         transform: {
@@ -26,8 +26,7 @@ const services = {
             password: "pgsecret",
             host: "transform-db",
             port: 5432,
-            dialect: "postgres",
-            operatorsAliases: false,
+            dialect: "postgres" as Dialect,
             logging: null
         },
         metrics: {

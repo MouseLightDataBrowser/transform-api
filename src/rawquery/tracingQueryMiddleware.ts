@@ -1,10 +1,10 @@
 import * as Sequelize from "sequelize";
+import {Tracing} from "../models/transform/tracing";
+import {TracingNode} from "../models/transform/tracingNode";
 
 const debug = require("debug")("mnb:transform:tracing-middleware");
 
 const Op = Sequelize.Op;
-
-import {PersistentStorageManager} from "../models/storageManager";
 
 export async function tracingQueryMiddleware(req, res) {
     const ts0 = process.hrtime();
@@ -19,14 +19,14 @@ export async function tracingQueryMiddleware(req, res) {
     const ts1 = process.hrtime();
 
     if (ids && ids.length > 0) {
-        tracings = await PersistentStorageManager.Instance().Tracings.findAll({
+        tracings = await Tracing.findAll({
             where: {id: {[Op.in]: ids}},
-            include: [{model: PersistentStorageManager.Instance().Nodes, as: "nodes"}]
+            include: [{model: TracingNode, as: "nodes"}]
         });
     } else {
-        tracings = await PersistentStorageManager.Instance().Tracings.findAll({
+        tracings = await Tracing.findAll({
             include: [{
-                model: PersistentStorageManager.Instance().Nodes,
+                model: TracingNode,
                 as: "nodes"
             }]
         });

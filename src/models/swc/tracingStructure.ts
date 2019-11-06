@@ -1,13 +1,18 @@
-export const TableName = "TracingStructure";
+import {Sequelize, DataTypes, HasManyGetAssociationsMixin} from "sequelize";
 
-export interface ITracingStructure {
-    id: string;
-    name: string;
-    value: number;
+import {BaseModel} from "../baseModel";
+import {SwcTracing} from "./swcTracing";
+
+export class TracingStructure extends BaseModel {
+    public id: string;
+    public name: string;
+    public value: number;
+
+    public getTracings!: HasManyGetAssociationsMixin<SwcTracing>;
 }
 
-export function sequelizeImport(sequelize, DataTypes) {
-    const TracingStructure = sequelize.define(TableName, {
+export const modelInit = (sequelize: Sequelize) => {
+    TracingStructure.init( {
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
@@ -17,12 +22,11 @@ export function sequelizeImport(sequelize, DataTypes) {
         value: DataTypes.INTEGER
     }, {
         timestamps: true,
-        paranoid: true
+        paranoid: true,
+        sequelize
     });
+};
 
-    TracingStructure.associate = models => {
-        TracingStructure.hasMany(models.SwcTracing, {foreignKey: "tracingStructureId", as: "SwcTracings"});
-    };
-
-    return TracingStructure;
-}
+export const modelAssociate = () => {
+    TracingStructure.hasMany(SwcTracing, {foreignKey: "tracingStructureId", as: "Tracings"});
+};

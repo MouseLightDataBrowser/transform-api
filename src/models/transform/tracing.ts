@@ -1,15 +1,16 @@
-import {ISwcTracing} from "../swc/tracing";
-import {ITracingNode, ITracingNodeAttributes} from "./tracingNode";
-import {Instance, Model} from "sequelize";
-import {IBrainCompartment} from "./brainCompartmentContents";
+import {DataTypes, HasManyGetAssociationsMixin, Sequelize} from "sequelize";
+
+import {BaseModel} from "../baseModel";
+import {TracingNode} from "./tracingNode";
+import {SwcTracing} from "../swc/swcTracing";
+import {BrainCompartment} from "./brainCompartmentContents";
 
 export enum ExportFormat {
     SWC = 0,
     JSON = 1
 }
 
-export interface ITracingAttributes {
-    id: string;
+export class Tracing extends BaseModel {
     swcTracingId?: string;
     registrationTransformId?: string;
     nodeCount?: number;
@@ -17,29 +18,26 @@ export interface ITracingAttributes {
     branchCount?: number;
     endCount?: number;
     transformedAt?: Date;
-    createdAt?: Date;
-    updatedAt?: Date;
 
-    getNodes?(): ITracingNodeAttributes[];
-    applyTransform?();
+    getNodes!: HasManyGetAssociationsMixin<TracingNode>;
+    getCompartments!: HasManyGetAssociationsMixin<BrainCompartment>;
+
+    nodes?: TracingNode[];
+
+    public static async findForSwcTracing(swcTracing: SwcTracing, registration): Promise<Tracing> {
+        const result = await Tracing.findOrCreate({
+            where: {
+                swcTracingId: swcTracing.id,
+                registrationTransformId: registration.id
+            }
+        });
+
+        return (result && result.length > 0) ? result[0] : null;
+    }
 }
 
-export interface ITracing extends Instance<ITracingAttributes>, ITracingAttributes {
-    compartments: IBrainCompartment[];
-    getCompartments(): IBrainCompartment[];
-
-    node: ITracingNode[];
-    getNodes(): ITracingNode[];
-}
-
-export interface ITracingTable extends Model<ITracing, ITracingAttributes> {
-    findForSwcTracing(swcTracing: ISwcTracing, registration): Promise<ITracing>;
-}
-
-export const TableName = "Tracing";
-
-export function sequelizeImport(sequelize, DataTypes) {
-    let Tracing = sequelize.define(TableName, {
+export const modelInit = (sequelize: Sequelize) => {
+    Tracing.init({
         id: {
             primaryKey: true,
             type: DataTypes.UUID,
@@ -56,19 +54,12 @@ export function sequelizeImport(sequelize, DataTypes) {
         transformedAt: DataTypes.DATE
     }, {
         timestamps: true,
-        paranoid: false
+        paranoid: false,
+        sequelize
     });
+};
 
-    Tracing.associate = models => {
-        Tracing.hasMany(models.TracingNode, {foreignKey: "tracingId", as: "nodes"});
-        Tracing.hasMany(models.BrainCompartmentContents, {foreignKey: "tracingId", as: "compartments"});
-    };
-
-    Tracing.findForSwcTracing = async(swcTracing: ISwcTracing, registration): Promise<ITracing> => {
-        const result = await Tracing.findOrCreate({where: {swcTracingId: swcTracing.id, registrationTransformId: registration.id}});
-
-        return (result && result.length > 0) ? result[0] : null;
-    };
-
-    return Tracing;
-}
+export const modelAssociate = () => {
+    Tracing.hasMany(TracingNode, {foreignKey: "tracingId", as: "nodes"});
+    Tracing.hasMany(BrainCompartment, {foreignKey: "tracingId", as: "compartments"});
+};

@@ -1,9 +1,7 @@
-export interface IStructureIdentifier {
-    id: string;
-    name: string;
-    value: number;
-    mutable: boolean;
-}
+import { Sequelize, DataTypes, HasManyGetAssociationsMixin} from "sequelize";
+
+import {BaseModel} from "../baseModel";
+import {SwcNode} from "./swcNode";
 
 export enum StructureIdentifiers {
     undefined = 0,
@@ -15,57 +13,39 @@ export enum StructureIdentifiers {
     endPoint = 6
 }
 
-export const TableName = "StructureIdentifier";
+export class StructureIdentifier extends BaseModel {
+    public name: string;
+    public value: StructureIdentifiers;
+    public mutable: boolean;
 
-export function sequelizeImport(sequelize, DataTypes) {
-    const StructureIdentifier = sequelize.define(TableName, {
-        id: {
-            primaryKey: true,
-            type: DataTypes.UUID,
-            defaultValue: DataTypes.UUIDV4
-        },
-        name: DataTypes.TEXT,
-        value: DataTypes.INTEGER,
-        mutable: {type: DataTypes.BOOLEAN, defaultValue: true}
-    }, {
-        timestamps: true,
-        paranoid: true
-    });
+    public getNodes!: HasManyGetAssociationsMixin<SwcNode>;
 
-    StructureIdentifier.associate = (models) => {
-        StructureIdentifier.hasMany(models.SwcTracingNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
-    };
+    public static valueIdMap = new Map<number, string>();
+    public static idValueMap = new Map<string, number>();
 
-    StructureIdentifier.prepareContents = () => {
-        StructureIdentifier.buildIdValueMap();
-    };
-
-    const valueIdMap = new Map<number, string>();
-    const idValueMap = new Map<string, number>();
-
-    StructureIdentifier.buildIdValueMap = async () => {
-        if (valueIdMap.size === 0) {
+    public static async buildIdValueMap()  {
+        if (this.valueIdMap.size === 0) {
             const all = await StructureIdentifier.findAll({});
             all.forEach(s => {
-                valueIdMap.set(s.value, s.id);
-                idValueMap.set(s.id, s.value);
+                this.valueIdMap.set(s.value, s.id);
+                this.idValueMap.set(s.id, s.value);
             });
         }
-    };
+    }
 
-    StructureIdentifier.idForValue = (val: number) => {
-        return valueIdMap.get(val);
-    };
+    public static idForValue(val: number) {
+        return this.valueIdMap.get(val);
+    }
 
-    StructureIdentifier.valueForId = (id: string) => {
-        return idValueMap.get(id);
-    };
+    public static valueForId(id: string) {
+        return this.idValueMap.get(id);
+    }
 
-    StructureIdentifier.structuresAreLoaded = () => {
-        return valueIdMap.size > 0;
-    };
+    public static structuresAreLoaded () {
+        return this.valueIdMap.size > 0;
+    }
 
-    StructureIdentifier.countColumnName = (s: number | string | IStructureIdentifier) => {
+    public static countColumnName(s: number | string | StructureIdentifier): string {
         if (s === null || s === undefined) {
             return null;
         }
@@ -75,7 +55,7 @@ export function sequelizeImport(sequelize, DataTypes) {
         if (typeof s === "number") {
             value = s;
         } else if (typeof s === "string") {
-            value = idValueMap.get(s);
+            value = this.idValueMap.get(s);
         } else {
             value = s.value;
         }
@@ -97,6 +77,27 @@ export function sequelizeImport(sequelize, DataTypes) {
 
         return null;
     };
-
-    return StructureIdentifier;
 }
+
+export const modelInit = (sequelize: Sequelize) => {
+    StructureIdentifier.init({
+        id: {
+            primaryKey: true,
+            type: DataTypes.UUID,
+            defaultValue: DataTypes.UUIDV4
+        },
+        name: DataTypes.TEXT,
+        value: DataTypes.INTEGER,
+        mutable: {type: DataTypes.BOOLEAN, defaultValue: true}
+    }, {
+        timestamps: true,
+        paranoid: true,
+        sequelize
+    });
+};
+
+export const modelAssociate = () => {
+    StructureIdentifier.hasMany(SwcNode, {foreignKey: "structureIdentifierId", as: "Nodes"});
+
+    StructureIdentifier.buildIdValueMap().then();
+};

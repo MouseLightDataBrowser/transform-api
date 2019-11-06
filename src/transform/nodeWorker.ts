@@ -1,17 +1,17 @@
-import {IBrainArea} from "../models/sample/brainArea";
+import {Tracing} from "../models/transform/tracing";
 
 const hdf5 = require("hdf5").hdf5;
 const Access = require("hdf5/lib/globals").Access;
-import * as uuid from "uuid";
 
 const debug = require("debug")("mnb:transform:node-worker");
 
-import {PersistentStorageManager} from "../models/storageManager";
 import {ServiceOptions} from "../options/serviceOptions";
-import {StructureIdentifiers} from "../models/swc/structureIdentifier";
-import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
-
-const storageManager = PersistentStorageManager.Instance();
+import {StructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
+import {BrainArea} from "../models/sample/brainArea";
+import {SwcTracing} from "../models/swc/swcTracing";
+import {RegistrationTransform} from "../models/sample/transform";
+import {BrainCompartment, BrainCompartmentMutationData} from "../models/transform/brainCompartmentContents";
+import {TracingNode} from "../models/transform/tracingNode";
 
 let tracingId = process.argv.length > 2 ? process.argv[2] : null;
 let swcTracingId = process.argv.length > 3 ? process.argv[3] : null;
@@ -40,13 +40,13 @@ interface IBrainCompartmentCounts {
 }
 
 export async function performNodeMap(tracingId, swcTracingId, registrationTransformId, isFork = false) {
-    const brainIdLookup = new Map<number, IBrainArea>();
+    const brainIdLookup = new Map<number, BrainArea>();
 
-    const tracing = await storageManager.Tracings.findOne({where: {id: tracingId}});
+    const tracing = await Tracing.findOne({where: {id: tracingId}});
 
-    const swcTracing = await storageManager.SwcTracings.findOne({where: {id: swcTracingId}});
+    const swcTracing = await SwcTracing.findOne({where: {id: swcTracingId}});
 
-    const registrationTransform = await storageManager.RegistrationTransforms.findOne({where: {id: registrationTransformId}});
+    const registrationTransform = await RegistrationTransform.findOne({where: {id: registrationTransformId}});
 
     if (!tracing || !swcTracing || !registrationTransform) {
         return false;
@@ -55,7 +55,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
     if (brainIdLookup.size === 0) {
         debug("populating brain area id lookup");
         const brainAreas = await
-            storageManager.BrainAreas.findAll();
+            BrainArea.findAll();
 
         brainAreas.forEach(brainArea => {
             brainIdLookup.set(brainArea.structureId, brainArea);
@@ -64,7 +64,8 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
     try {
         debug("loading swc nodes");
-        let swcNodes = await swcTracing.getNodes();
+
+        const swcNodes = await swcTracing.getNodes({include: [{model: StructureIdentifier, attributes: ["id", "value"]}]});
 
         if (isFork) {
             process.send({tracing: tracingId, status: {inputNodeCount: swcNodes.length}});
@@ -183,7 +184,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
                 counts.node += 1;
 
-                switch (storageManager.StructureIdentifiers.valueForId(swcNode.structureIdentifierId)) {
+                switch (swcNode.structureIdentifier.value) {
                     case StructureIdentifiers.soma:
                         counts.soma++;
                         break;
@@ -198,7 +199,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
                 }
             }
 
-            switch (storageManager.StructureIdentifiers.valueForId(swcNode.structureIdentifierId)) {
+            switch (swcNode.structureIdentifier.value) {
                 case StructureIdentifiers.soma:
                     tracingCounts.soma++;
                     break;
@@ -221,7 +222,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
                 z: transformedLocation[2],
                 radius: swcNode.radius,
                 parentNumber: swcNode.parentNumber,
-                structureIdentifierId: swcNode.structureIdentifierId,
+                structureIdentifierId: swcNode.structureIdentifier.value,
                 brainAreaId: brainAreaId,
                 lengthToParent: lengthToParent
             };
@@ -233,9 +234,9 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         hdf5.closeDataset(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset);
 
-        await storageManager.Nodes.destroy({where: {tracingId: tracing.id}, force: true});
+        await TracingNode.destroy({where: {tracingId: tracing.id}, force: true});
 
-        await storageManager.Nodes.bulkCreate(nodes);
+        await TracingNode.bulkCreate(nodes);
 
         await tracing.update({
             transformedAt: new Date(),
@@ -247,15 +248,14 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
 
         debug(`inserted ${nodes.length} nodes`);
 
-        await storageManager.BrainCompartment.destroy({where: {tracingId: tracing.id}, force: true});
+        await BrainCompartment.destroy({where: {tracingId: tracing.id}, force: true});
 
-        let compartments: IBrainCompartmentAttributes[] = [];
+        let compartments: BrainCompartmentMutationData[] = [];
 
         for (const entry of compartmentMap.entries()) {
             compartments.push({
-                id: uuid.v4(),
-                brainAreaId: entry[0],
                 tracingId: tracing.id,
+                brainAreaId: entry[0],
                 nodeCount: entry[1].node,
                 somaCount: entry[1].soma,
                 pathCount: entry[1].path,
@@ -264,7 +264,7 @@ export async function performNodeMap(tracingId, swcTracingId, registrationTransf
             });
         }
 
-        await storageManager.BrainCompartment.bulkCreate(compartments);
+        await BrainCompartment.bulkCreate(compartments);
 
         debug(`inserted ${compartments.length} brain compartment stats`);
 

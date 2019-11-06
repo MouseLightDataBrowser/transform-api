@@ -1,34 +1,37 @@
-import {
-    IDeleteTracingOutput, GraphQLServerContext, IQueryDataPage, IRequestExportOutput, ITracingPage,
-    ICompartmentQueryOutputPage,
-    ITracingsQueryInput, getNodeBrainArea
-} from "./serverContext";
-
 const debug = require("debug")("mnb:transform:resolvers");
 
-import {ISwcTracing} from "../models/swc/tracing";
-import {ExportFormat, ITracing, ITracingAttributes} from "../models/transform/tracing";
-import {ITracingNodeAttributes, INodePage, IPageInput} from "../models/transform/tracingNode";
-import {ISwcNode} from "../models/swc/tracingNode";
-import {TransformManager, ITransformProgress, ITransformResult} from "../transform/transformManager";
-import {ITracingStructure} from "../models/swc/tracingStructure";
-import {IStructureIdentifier} from "../models/swc/structureIdentifier";
-import {IBrainCompartmentAttributes} from "../models/transform/brainCompartmentContents";
+import {
+    GraphQLServerContext,
+    ICompartmentQueryOutputPage,
+    IDeleteTracingOutput,
+    IQueryDataPage,
+    IRequestExportOutput,
+    ITracingPage,
+    ITracingsQueryInput
+} from "./serverContext";
+import {ExportFormat, Tracing} from "../models/transform/tracing";
+import {INodePage, IPageInput, TracingNode} from "../models/transform/tracingNode";
+import {ITransformProgress, ITransformResult, TransformManager} from "../transform/transformManager";
+import {StructureIdentifier} from "../models/swc/structureIdentifier";
 import {IQueryOperator, operators} from "../models/search/queryOperator";
 import {ServiceOptions} from "../options/serviceOptions";
-import {IBrainArea} from "../models/sample/brainArea";
-import {INeuron} from "../models/sample/neuron";
-import {ITransform} from "../models/sample/transform";
+import {BrainArea} from "../models/sample/brainArea";
+import {TracingStructure} from "../models/swc/tracingStructure";
+import {Neuron} from "../models/sample/neuron";
+import {SwcTracing} from "../models/swc/swcTracing";
+import {RegistrationTransform} from "../models/sample/transform";
+import {SwcNode} from "../models/swc/swcNode";
+import {BrainCompartment} from "../models/transform/brainCompartmentContents";
 
 interface IIdOnlyArguments {
     id: string;
 }
 
-interface ITracingIdsArguments {
+interface TracingIdsArguments {
     tracingIds: string[];
 }
 
-interface ISwcTracingIdsArguments {
+interface SwcTracingIdsArguments {
     swcTracingIds: string[];
 }
 
@@ -40,7 +43,7 @@ interface INodePageArguments {
     page: IPageInput;
 }
 
-interface ITracingNodesArguments {
+interface TracingNodesArguments {
     brainAreaIds: string[];
 }
 
@@ -63,16 +66,16 @@ export interface IFilterInput {
     nonce: string;
 }
 
-interface ITracingsPageArguments {
+interface TracingsPageArguments {
     filters: IFilterInput[];
 }
 
-interface ITracingNodePage2Arguments {
+interface TracingNodePage2Arguments {
     page: IPageInput;
     filters: IFilterInput[];
 }
 
-interface ITracingsArguments {
+interface TracingsArguments {
     queryInput: ITracingsQueryInput;
 }
 
@@ -89,44 +92,44 @@ const resolvers = {
         queryOperators(): IQueryOperator[] {
             return operators;
         },
-        brainAreas(_, __, context: GraphQLServerContext): Promise<IBrainArea[]> {
+        brainAreas(_, __, context: GraphQLServerContext): Promise<BrainArea[]> {
             return context.getBrainAreas();
         },
-        structureIdentifiers(_, __, context: GraphQLServerContext): Promise<IStructureIdentifier[]> {
+        structureIdentifiers(_, __, context: GraphQLServerContext): Promise<StructureIdentifier[]> {
             return context.getStructureIdentifiers();
         },
-        tracingStructures(_, __, context: GraphQLServerContext): Promise<ITracingStructure[]> {
+        tracingStructures(_, __, context: GraphQLServerContext): Promise<TracingStructure[]> {
             return context.getTracingStructures();
         },
-        neuron(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<INeuron> {
+        neuron(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<Neuron> {
             return context.getNeuron(args.id);
         },
-        neurons(_, __, context: GraphQLServerContext): Promise<INeuron[]> {
+        neurons(_, __, context: GraphQLServerContext): Promise<Neuron[]> {
             return context.getNeurons();
         },
-        swcTracings(_, __, context: GraphQLServerContext): Promise<ISwcTracing[]> {
+        swcTracings(_, __, context: GraphQLServerContext): Promise<SwcTracing[]> {
             return context.getSwcTracings();
         },
-        swcTracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ISwcTracing> {
+        swcTracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<SwcTracing> {
             return context.getSwcTracing(args.id);
         },
-        tracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ITracing> {
+        tracing(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<Tracing> {
             return context.getTracing(args.id);
         },
-        tracings(_, args: ITracingsArguments, context: GraphQLServerContext): Promise<ITracingPage> {
+        tracings(_, args: TracingsArguments, context: GraphQLServerContext): Promise<ITracingPage> {
             return context.getTracings(args.queryInput);
         },
-        tracingsForNeuron(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<ITracing[]> {
+        tracingsForNeuron(_, args: IIdOnlyArguments, context: GraphQLServerContext): Promise<Tracing[]> {
             return context.getNeuronTracings(args.id);
         },
-        tracingsPage(_, args: ITracingsPageArguments, context: GraphQLServerContext): Promise<ICompartmentQueryOutputPage> {
+        tracingsPage(_, args: TracingsPageArguments, context: GraphQLServerContext): Promise<ICompartmentQueryOutputPage> {
             try {
                 return context.getCompartmentsWithFilters(args.filters || []);
             } catch (err) {
                 debug(err);
             }
         },
-        queryData(_, args: ITracingsPageArguments, context: GraphQLServerContext): Promise<IQueryDataPage> {
+        queryData(_, args: TracingsPageArguments, context: GraphQLServerContext): Promise<IQueryDataPage> {
             try {
                 return context.getNeuronsWithFilters(args.filters || []);
             } catch (err) {
@@ -136,13 +139,13 @@ const resolvers = {
         tracingNodePage(_, args: INodePageArguments, context: GraphQLServerContext): Promise<INodePage> {
             return context.getNodePage(args.page);
         },
-        tracingNodePage2(_, args: ITracingNodePage2Arguments, context: GraphQLServerContext): Promise<INodePage> {
+        tracingNodePage2(_, args: TracingNodePage2Arguments, context: GraphQLServerContext): Promise<INodePage> {
             return context.getNodePage2(args.page, args.filters);
         },
-        brainCompartmentContents(_, __, context: GraphQLServerContext): Promise<IBrainCompartmentAttributes[]> {
+        brainCompartmentContents(_, __, context: GraphQLServerContext): Promise<BrainCompartment[]> {
             return context.getBrainCompartmentContents();
         },
-        untransformedSwc(_, __, context: GraphQLServerContext): Promise<ISwcTracing[]> {
+        untransformedSwc(_, __, context: GraphQLServerContext): Promise<SwcTracing[]> {
             return context.getUntransformedSwc();
         },
 
@@ -161,10 +164,10 @@ const resolvers = {
             return context.reapplyTransforms();
         },
 
-        deleteTracings(_, args: ITracingIdsArguments, context: GraphQLServerContext): Promise<IDeleteTracingOutput[]> {
+        deleteTracings(_, args: TracingIdsArguments, context: GraphQLServerContext): Promise<IDeleteTracingOutput[]> {
             return context.deleteTracings(args.tracingIds);
         },
-        deleteTracingsForSwc(_, args: ISwcTracingIdsArguments, context: GraphQLServerContext): Promise<IDeleteTracingOutput[]> {
+        deleteTracingsForSwc(_, args: SwcTracingIdsArguments, context: GraphQLServerContext): Promise<IDeleteTracingOutput[]> {
             return context.deleteTracingsForSwc(args.swcTracingIds);
         },
 
@@ -184,36 +187,36 @@ const resolvers = {
         }
     },
     Neuron: {
-        brainArea(neuron: INeuron, _, context: GraphQLServerContext): Promise<IBrainArea> {
+        brainArea(neuron: Neuron, _, context: GraphQLServerContext): Promise<BrainArea> {
             return context.getNeuronBrainArea(neuron);
         },
-        tracings(neuron: INeuron, _, context: GraphQLServerContext): Promise<ITracing[]> {
+        tracings(neuron: Neuron, _, context: GraphQLServerContext): Promise<Tracing[]> {
             return context.getNeuronTracings(neuron.id);
         },
     },
     Tracing: {
-        swcTracing(tracing: ITracingAttributes, _, context: GraphQLServerContext): Promise<ISwcTracing> {
+        swcTracing(tracing: Tracing, _, context: GraphQLServerContext): Promise<SwcTracing> {
             return context.getSwcTracing(tracing.swcTracingId);
         },
-        registrationTransform(tracing: ITracingAttributes, _, context: GraphQLServerContext): Promise<ITransform> {
+        registrationTransform(tracing: Tracing, _, context: GraphQLServerContext): Promise<RegistrationTransform> {
             return context.getRegistrationTransform(tracing.registrationTransformId);
         },
-        tracingStructure(tracing, _, context: GraphQLServerContext): Promise<ITracingStructure> {
+        tracingStructure(tracing, _, context: GraphQLServerContext): Promise<TracingStructure> {
             return context.getTracingStructure(tracing);
         },
         nodeCount(tracing, _, context: GraphQLServerContext): Promise<number> {
             return context.getNodeCount(tracing);
         },
-        firstNode(tracing, _, context: GraphQLServerContext): Promise<ITracingNodeAttributes> {
+        firstNode(tracing, _, context: GraphQLServerContext): Promise<TracingNode> {
             return context.getFirstTracingNode(tracing);
         },
-        soma(tracing, _, context: GraphQLServerContext): Promise<ITracingNodeAttributes> {
+        soma(tracing, _, context: GraphQLServerContext): Promise<TracingNode> {
             return context.getSoma(tracing);
         },
-        nodes(tracing: ITracingAttributes, args: ITracingNodesArguments, context: GraphQLServerContext): Promise<ITracingNodeAttributes[]> {
+        nodes(tracing: Tracing, args: TracingNodesArguments, context: GraphQLServerContext): Promise<TracingNode[]> {
             return context.getNodes(tracing);
         },
-        keyNodes(tracing: ITracingAttributes, args: ITracingNodesArguments, context: GraphQLServerContext): Promise<ITracingNodeAttributes[]> {
+        keyNodes(tracing: Tracing, args: TracingNodesArguments, context: GraphQLServerContext): Promise<TracingNode[]> {
             return context.getKeyNodes(tracing);
         },
         transformStatus(tracing): ITransformProgress {
@@ -221,43 +224,43 @@ const resolvers = {
         }
     },
     Node: {
-        swcNode(node, _, context: GraphQLServerContext): Promise<ISwcNode> {
+        swcNode(node, _, context: GraphQLServerContext): Promise<SwcNode> {
             return context.getNodeSwcNode(node);
         },
-        structureIdentifier(node, _, context: GraphQLServerContext): Promise<IStructureIdentifier> {
+        structureIdentifier(node, _, context: GraphQLServerContext): Promise<StructureIdentifier> {
             return context.getNodeStructureIdentifier(node);
         },
-        structureIdValue(node: ITracingNodeAttributes, _, context: GraphQLServerContext): number {
+        structureIdValue(node: TracingNode, _, context: GraphQLServerContext): number {
             return context.getStructureIdValue(node.structureIdentifierId);
         },
-        brainArea(node): IBrainArea {
-            return getNodeBrainArea(node);
+        brainArea(node): Promise<BrainArea> {
+            return BrainArea.getNodeBrainArea(node);
         }
     },
     SwcTracing: {
-        firstNode(tracing, _, context: GraphQLServerContext): Promise<ISwcNode> {
+        firstNode(tracing, _, context: GraphQLServerContext): Promise<SwcNode> {
             return context.getFirstSwcNode(tracing);
         },
         nodeCount(tracing, _, context: GraphQLServerContext): Promise<number> {
             return context.getSwcNodeCount(tracing);
         },
-        tracingStructure(tracing, _, context: GraphQLServerContext): Promise<ITracingStructure> {
+        tracingStructure(tracing, _, context: GraphQLServerContext): Promise<TracingStructure> {
             return context.getSwcTracingStructure(tracing);
         },
-        neuron(tracing, _, context: GraphQLServerContext): Promise<INeuron> {
+        neuron(tracing, _, context: GraphQLServerContext): Promise<Neuron> {
             return context.getNeuron(tracing.neuronId);
         }
     },
     SwcNode: {
-        structureIdentifier(node, _, context: GraphQLServerContext): Promise<IStructureIdentifier> {
+        structureIdentifier(node, _, context: GraphQLServerContext): Promise<StructureIdentifier> {
             return context.getSwcNodeStructureIdentifier(node);
         }
     },
     BrainCompartmentContent: {
-        tracing(compartment: IBrainCompartmentAttributes, _, context: GraphQLServerContext): Promise<ITracingAttributes> {
-            return context.getTracing(compartment.tracingId);
+        async tracing(compartment: BrainCompartment): Promise<Tracing> {
+            return compartment.getTracing();
         },
-        brainArea(compartment: IBrainCompartmentAttributes, _, context: GraphQLServerContext): Promise<IBrainArea> {
+        brainArea(compartment: BrainCompartment, _, context: GraphQLServerContext): Promise<BrainArea> {
             return context.getBrainArea(compartment.brainAreaId);
         }
     }

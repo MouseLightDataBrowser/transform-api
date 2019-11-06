@@ -1,8 +1,9 @@
-import {Instance, Model} from "sequelize";
-import {ITracing} from "./tracing";
+import {BelongsToGetAssociationMixin, DataTypes, Sequelize} from "sequelize";
 
-export interface IBrainCompartmentAttributes {
-    id?: string;
+import {BaseModel} from "../baseModel";
+import {Tracing} from "./tracing";
+
+export class BrainCompartmentMutationData {
     tracingId: string;
     brainAreaId: string;
     nodeCount: number;
@@ -10,22 +11,23 @@ export interface IBrainCompartmentAttributes {
     pathCount: number;
     branchCount: number;
     endCount: number;
-    createdAt?: Date;
-    updatedAt?: Date;
 }
 
-export interface IBrainCompartment extends Instance<IBrainCompartmentAttributes>, IBrainCompartmentAttributes {
-    tracing: ITracing;
-    getTracing(): ITracing;
+export class BrainCompartment extends BaseModel {
+    public brainAreaId: string;
+    public nodeCount: number;
+    public somaCount: number;
+    public pathCount: number;
+    public branchCount: number;
+    public endCount: number;
+
+    public getTracing!: BelongsToGetAssociationMixin<Tracing>;
+
+    public tracing?: Tracing;
 }
 
-export interface IBrainCompartmentTable extends Model<IBrainCompartment, IBrainCompartmentAttributes> {
-}
-
-export const TableName = "BrainCompartmentContents";
-
-export function sequelizeImport(sequelize, DataTypes) {
-    let BrainCompartmentContents = sequelize.define(TableName, {
+export const modelInit = (sequelize: Sequelize) => {
+    BrainCompartment.init({
         id: {
             primaryKey: true,
             type: DataTypes.UUID
@@ -44,13 +46,13 @@ export function sequelizeImport(sequelize, DataTypes) {
             }
         }
     }, {
+        tableName: "BrainCompartmentContents",
         timestamps: true,
-        paranoid: false
+        paranoid: false,
+        sequelize
     });
 
-    BrainCompartmentContents.associate = models => {
-        BrainCompartmentContents.belongsTo(models.Tracing, {foreignKey: "tracingId", as: "tracing"});
-    };
-
-    return BrainCompartmentContents;
-}
+};
+export const modelAssociate = () => {
+    BrainCompartment.belongsTo(Tracing, {foreignKey: "tracingId"});
+};
