@@ -11,18 +11,18 @@ export enum ExportFormat {
 }
 
 export class Tracing extends BaseModel {
-    swcTracingId?: string;
-    registrationTransformId?: string;
-    nodeCount?: number;
-    pathCount?: number;
-    branchCount?: number;
-    endCount?: number;
-    transformedAt?: Date;
+    public swcTracingId?: string;
+    public registrationTransformId?: string;
+    public nodeCount?: number;
+    public pathCount?: number;
+    public branchCount?: number;
+    public endCount?: number;
+    public transformedAt?: Date;
 
-    getNodes!: HasManyGetAssociationsMixin<TracingNode>;
-    getCompartments!: HasManyGetAssociationsMixin<BrainCompartment>;
+    public getNodes!: HasManyGetAssociationsMixin<TracingNode>;
+    public getCompartments!: HasManyGetAssociationsMixin<BrainCompartment>;
 
-    nodes?: TracingNode[];
+    public nodes?: TracingNode[];
 
     public static async findForSwcTracing(swcTracing: SwcTracing, registration): Promise<Tracing> {
         const result = await Tracing.findOrCreate({

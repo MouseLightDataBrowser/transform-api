@@ -81,10 +81,10 @@
   dependencies:
     "@types/glob" "*"
 
-"@types/bluebird@*":
-  version "3.5.24"
-  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.24.tgz#11f76812531c14f793b8ecbf1de96f672905de8a"
-  integrity sha512-YeQoDpq4Lm8ppSBqAnAeF/xy1cYp/dMTif2JFcvmAbETMRlvKHT2iLcWu+WyYiJO3b3Ivokwo7EQca/xfLVJmg==
+"@types/bluebird@^3.5.28":
+  version "3.5.28"
+  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.28.tgz#04c1a520ff076649236bc8ca21198542ce2bdb09"
+  integrity sha512-0Vk/kqkukxPKSzP9c8WJgisgGDx5oZDbsLLWIP5t70yThO/YleE+GEm2S1GlRALTaack3O7U5OS5qEm7q2kciA==
 
 "@types/body-parser@*":
   version "1.17.0"
@@ -106,13 +106,6 @@
   version "3.4.32"
   resolved "https://registry.yarnpkg.com/@types/connect/-/connect-3.4.32.tgz#aa0e9616b9435ccad02bc52b5b454ffc2c70ba28"
   integrity sha512-4r8qa0quOvh7lGD0pre62CAb1oni1OO6ecJLGCezTmhQ8Fz50Arx9RUszryR8KlgK6avuSXvviL6yWyViQABOg==
-  dependencies:
-    "@types/node" "*"
-
-"@types/continuation-local-storage@*":
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/@types/continuation-local-storage/-/continuation-local-storage-3.2.1.tgz#a33e0df9dce9b424d1c98fc4fdebd8578dceec7e"
-  integrity sha1-oz4N+dzptCTRyY/E/evYV43O7H4=
   dependencies:
     "@types/node" "*"
 
@@ -208,13 +201,6 @@
     "@types/koa" "*"
     graphql "^14.5.3"
 
-"@types/gulp-shell@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@types/gulp-shell/-/gulp-shell-0.7.0.tgz#b4d381ad17bf20f42ad274d226a3f2aee1bc7d40"
-  integrity sha512-MKd8Y0N09U1j+CesfAmT+GHMsQSuXAGb6v5c1rOh3jVff9HPc0JOIchvUOigC+T2aSpYS6FZEpnJbHaXcgoJJA==
-  dependencies:
-    gulp-shell "*"
-
 "@types/gulp@4.0.6":
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/@types/gulp/-/gulp-4.0.6.tgz#68fe0e1f0ff3657cfca46fb564806b744a1bf899"
@@ -253,11 +239,6 @@
     "@types/koa-compose" "*"
     "@types/node" "*"
 
-"@types/lodash@*":
-  version "4.14.117"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.117.tgz#695a7f514182771a1e0f4345d189052ee33c8778"
-  integrity sha512-xyf2m6tRbz8qQKcxYZa7PA4SllYcay+eh25DN3jmNYY6gSTL7Htc/bttVdkqj2wfJGbeWlQiX8pIyJpKU+tubw==
-
 "@types/lodash@^4.14.144":
   version "4.14.144"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.144.tgz#12e57fc99064bce45e5ab3c8bc4783feb75eab8e"
@@ -283,6 +264,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.11.7.tgz#0e75ca9357d646ca754016ca1d68a127ad7e7300"
   integrity sha512-yOxFfkN9xUFLyvWaeYj90mlqTJ41CsQzWKS3gXdOMOyPVacUsymejKxJ4/pMW7exouubuEeZLJawGgcNGYlTeg==
 
+"@types/node@^12.12.6":
+  version "12.12.6"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.6.tgz#a47240c10d86a9a57bb0c633f0b2e0aea9ce9253"
+  integrity sha512-FjsYUPzEJdGXjwKqSpE0/9QEh6kzhTAeObA54rn6j3rR4C/mzpI9L0KNfoeASSPMMdxIsoJuCLDWcM/rVjIsSA==
+
 "@types/range-parser@*":
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.2.tgz#fa8e1ad1d474688a757140c91de6dace6f4abc8d"
@@ -294,16 +280,6 @@
   integrity sha512-1dAV8Va7KsiXNAstV2JmF4CRVG3Fsyl+VnBw87C9cCMccekpOqJBezS7MUnHYPChNAFee1WakwBXdfn7QJxzVg==
   dependencies:
     sanitize-filename "*"
-
-"@types/sequelize@^4.28.6":
-  version "4.28.6"
-  resolved "https://registry.yarnpkg.com/@types/sequelize/-/sequelize-4.28.6.tgz#01d2f1d3781cc34448cd63c2fd97bdb0612b15de"
-  integrity sha512-mtNHjfbS1DwQoYaBGuWW8aw6IUTkrq2XbjjAqcAqPLasxTbu8mXkz3n2VCNiytK18Z/kGtvh6U0VlK4BWXDbwA==
-  dependencies:
-    "@types/bluebird" "*"
-    "@types/continuation-local-storage" "*"
-    "@types/lodash" "*"
-    "@types/validator" "*"
 
 "@types/serve-static@*":
   version "1.13.2"
@@ -332,10 +308,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/validator@*":
-  version "9.4.2"
-  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-9.4.2.tgz#9fec264b35f0ea21d0967eeec2dcd6a798b34350"
-  integrity sha512-v6H2QH+oXVdLKp9keOJi5LQSt6X5/XIOtK1YmbCzvkAT2kHW9WyQkixit9w1UgJpBGrDCqqCZlQ+Qucpmsf8hA==
+"@types/validator@^10.11.3":
+  version "10.11.3"
+  resolved "https://registry.yarnpkg.com/@types/validator/-/validator-10.11.3.tgz#945799bef24a953c5bc02011ca8ad79331a3ef25"
+  integrity sha512-GKF2VnEkMmEeEGvoo03ocrP9ySMuX1ypKazIYMlsjfslfBMhOAtC5dmEWKdJioW4lJN7MZRS88kalTsVClyQ9w==
 
 "@types/vinyl-fs@*":
   version "2.4.11"
@@ -1943,7 +1919,7 @@ gulp-cli@^2.2.0:
     v8flags "^3.0.1"
     yargs "^7.1.0"
 
-gulp-shell@*, gulp-shell@^0.7.1:
+gulp-shell@^0.7.1:
   version "0.7.1"
   resolved "https://registry.yarnpkg.com/gulp-shell/-/gulp-shell-0.7.1.tgz#0434d3dd852eb256824076466935b51c5f7b5191"
   integrity sha512-5dKf1eJDdBiUS4LKCt4tm9IkDnWeXKGCKjQG5EJj/bVeVOisAPse5RLxccGh1OtfbzQdOWCywu936DTB8isZRw==

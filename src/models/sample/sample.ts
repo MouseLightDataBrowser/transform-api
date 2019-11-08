@@ -47,13 +47,13 @@ export interface SampleInput {
 }
 
 export class Sample extends BaseModel {
-    idNumber: number;
-    animalId: string;
-    tag: string;
-    comment: string;
-    sampleDate: Date;
-    activeRegistrationTransformId: string;
-    sharing: number;
+    public idNumber: number;
+    public animalId: string;
+    public tag: string;
+    public comment: string;
+    public sampleDate: Date;
+    public activeRegistrationTransformId: string;
+    public sharing: number;
 
     public getMouseStrain!: BelongsToGetAssociationMixin<MouseStrain>;
     public getInjections!: HasManyGetAssociationsMixin<Injection>;
