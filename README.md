@@ -1,6 +1,15 @@
 # Neuron Data Browser Transform API
 Service to transform Janelia to Allen coordinates using registration files.
 
+### Build Notes
+This references a forked version of hdf5.node that is customized to
+* allow getting the dimensions and contents of 4-D datasets
+* perform multiple reads from a single file open
+
+This was forked when nodejs 8.12 was the latest stable release. `yarn install` will fail with newer versions of nodejs.  
+
+Reading HDF5 files will need to be updated (e.g., reapply above additions to the latest hdf5.node) to build or run with a newer nodejs version.
+
 #####Full Swc Tracing Query
 ````
 {
