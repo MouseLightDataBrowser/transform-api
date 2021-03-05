@@ -4,6 +4,7 @@ import {BaseModel} from "../baseModel";
 import {Tracing} from "./tracing";
 
 export class BrainCompartmentMutationData {
+    id?: string;
     tracingId: string;
     brainAreaId: string;
     nodeCount: number;
@@ -26,8 +27,10 @@ export class BrainCompartment extends BaseModel {
     public tracing?: Tracing;
 }
 
+export class CcfV25BrainCompartment extends BrainCompartment {}
+
 export const modelInit = (sequelize: Sequelize) => {
-    BrainCompartment.init({
+    CcfV25BrainCompartment.init({
         id: {
             primaryKey: true,
             type: DataTypes.UUID
@@ -46,13 +49,13 @@ export const modelInit = (sequelize: Sequelize) => {
             }
         }
     }, {
-        tableName: "BrainCompartmentContents",
+        tableName: "CcfV25BrainCompartmentContents",
         timestamps: true,
         paranoid: false,
         sequelize
     });
-
 };
+
 export const modelAssociate = () => {
-    BrainCompartment.belongsTo(Tracing, {foreignKey: "tracingId"});
+    CcfV25BrainCompartment.belongsTo(Tracing, {foreignKey: "tracingId"});
 };

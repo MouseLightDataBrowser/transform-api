@@ -10,6 +10,8 @@ This was forked when nodejs 8.12 was the latest stable release. `yarn install` w
 
 Reading HDF5 files will need to be updated (e.g., reapply above additions to the latest hdf5.node) to build or run with a newer nodejs version.
 
+### Usage
+
 #####Full Swc Tracing Query
 ````
 {

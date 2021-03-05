@@ -4,6 +4,7 @@ const BrainCompartmentContentsTable = "BrainCompartmentContents";
 const CcfV25BrainCompartmentContentsTable = "CcfV25BrainCompartmentContents";
 const CcfV30BrainCompartmentContentsTable = "CcfV30BrainCompartmentContents";
 const CcfV25BrainCompartmentColumn = "brainAreaIdCcfV25";
+const CcfV30BrainCompartmentColumn = "brainAreaIdCcfV30";
 
 export = {
     up: async (queryInterface, Sequelize) => {
@@ -41,10 +42,10 @@ export = {
 
         await queryInterface.renameTable(BrainCompartmentContentsTable, CcfV25BrainCompartmentContentsTable);
 
-        await queryInterface.renameColumn(TracingNodesTable, "brainAreaId", "brainAreaIdCcfV25");
+        await queryInterface.renameColumn(TracingNodesTable, "brainAreaId", CcfV25BrainCompartmentColumn);
 
-        await queryInterface.addColumn(TracingNodesTable, "brainAreaIdCcfV30", Sequelize.UUID);
-        await queryInterface.addIndex(TracingNodesTable, ["brainAreaIdCcfV30"]);
+        await queryInterface.addColumn(TracingNodesTable, CcfV30BrainCompartmentColumn, Sequelize.UUID);
+        await queryInterface.addIndex(TracingNodesTable, [CcfV30BrainCompartmentColumn]);
     },
 
     down: async (queryInterface, Sequelize) => {
@@ -52,9 +53,9 @@ export = {
 
         await queryInterface.renameTable(CcfV25BrainCompartmentContentsTable, BrainCompartmentContentsTable);
 
-        await queryInterface.renameColumn(TracingNodesTable, "brainAreaIdCcfV25", "brainAreaId");
+        await queryInterface.renameColumn(TracingNodesTable, CcfV25BrainCompartmentColumn, "brainAreaId");
 
-        await queryInterface.removeIndex(TracingNodesTable, "brainAreaIdCcfV30");
-        await queryInterface.removeColumn(TracingNodesTable, "brainAreaIdCcfV30");
+        await queryInterface.removeIndex(TracingNodesTable, CcfV30BrainCompartmentColumn);
+        await queryInterface.removeColumn(TracingNodesTable, CcfV30BrainCompartmentColumn);
     }
 };

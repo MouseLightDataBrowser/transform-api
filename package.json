@@ -10,7 +10,8 @@
   "dockerImageName": "transform-api",
   "scripts": {
     "debug": "DEBUG=mnb:transform* node --trace-warnings --max-old-space-size=8192 --optimize-for-size src/app.js",
-    "test-transform": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/transformOnly.js",
+    "test-transform": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/transformBatch.js",
+    "reapply-all": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/reapplyAllTransforms.js",
     "docker-build": "gulp docker-build",
     "docker-release": "gulp release",
     "migrate": "tsc && ./migrate.sh"
