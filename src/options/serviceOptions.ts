@@ -5,7 +5,8 @@ import * as path from "path";
 export interface IServiceOptions {
     port: number;
     graphQLEndpoint: string;
-    ontologyPath: string;
+    ccfv25OntologyPath: string;
+    ccfv30OntologyPath: string;
     release: string;
     version: string;
 }
@@ -13,7 +14,8 @@ export interface IServiceOptions {
 const configuration: IServiceOptions = {
     port: 5000,
     graphQLEndpoint: "/graphql",
-    ontologyPath: "/groups/mousebrainmicro/mousebrainmicro/registration/Allen Atlas/OntologyAtlas.h5",
+    ccfv25OntologyPath: "/groups/mousebrainmicro/neuron-browser/registration/OntologyAtlas.h5",
+    ccfv30OntologyPath: "/groups/mousebrainmicro/neuron-browser/registration/ccfv30_raw.nrrd",
     release: "public",
     version: ""
 };
@@ -24,7 +26,8 @@ function loadConfiguration(): IServiceOptions {
     c.port = parseInt(process.env.TRANSFORM_API_PORT) || c.port;
     c.graphQLEndpoint = process.env.TRANSFORM_API_ENDPOINT || process.env.CORE_SERVICES_ENDPOINT || c.graphQLEndpoint;
 
-    c.ontologyPath = process.env.ONTOLOGY_PATH || c.ontologyPath;
+    c.ccfv25OntologyPath = process.env.CCF_25_ONTOLOGY_PATH || c.ccfv25OntologyPath;
+    c.ccfv30OntologyPath = process.env.CCF_30_ONTOLOGY_PATH || c.ccfv30OntologyPath;
 
     c.release = process.env.NEURON_BROWSER_RELEASE || c.release;
     c.version = readSystemVersion();

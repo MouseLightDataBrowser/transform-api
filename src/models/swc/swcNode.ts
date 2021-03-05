@@ -51,6 +51,6 @@ export const modelInit = (sequelize: Sequelize) => {
 };
 
 export const modelAssociate = () => {
-    SwcNode.belongsTo(StructureIdentifier, {foreignKey: "structureIdentifierId"});
+    SwcNode.belongsTo(StructureIdentifier, {foreignKey: "structureIdentifierId", as: "structureIdentifier"});
     SwcNode.belongsTo(SwcTracing, {foreignKey: "swcTracingId", as: "tracing"});
 };

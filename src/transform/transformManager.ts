@@ -1,4 +1,3 @@
-import {performNodeMap} from "./nodeWorker";
 const path = require("path");
 const fs = require("fs");
 const fork = require("child_process").fork;
@@ -8,6 +7,7 @@ const debug = require("debug")("mnb:transform:transform-worker");
 import {ServiceOptions} from "../options/serviceOptions";
 import {Tracing} from "../models/transform/tracing";
 import {SwcTracing} from "../models/swc/swcTracing";
+import {performNodeMap} from "./nodeWorker";
 
 export interface ITransformProgress {
     startedAt: Date;
@@ -44,9 +44,20 @@ export class TransformManager {
             return {tracing: null, errors: [`transform file ${registrationTransform.location} does not exist`]};
         }
 
-        if (!fs.existsSync(ServiceOptions.ontologyPath)) {
-            debug(`ontology file ${ServiceOptions.ontologyPath} does not exist`);
-            return {tracing: null, errors: [`ontology file ${ServiceOptions.ontologyPath} does not exist`]};
+        if (!fs.existsSync(ServiceOptions.ccfv25OntologyPath)) {
+            debug(`CCF v2.5 ontology file ${ServiceOptions.ccfv25OntologyPath} does not exist`);
+            return {
+                tracing: null,
+                errors: [`CCF v2.5 ontology file ${ServiceOptions.ccfv25OntologyPath} does not exist`]
+            };
+        }
+
+        if (!fs.existsSync(ServiceOptions.ccfv30OntologyPath)) {
+            debug(`CCF v3.0 ontology file ${ServiceOptions.ccfv30OntologyPath} does not exist`);
+            return {
+                tracing: null,
+                errors: [`CCF v3.0 ontology file ${ServiceOptions.ccfv30OntologyPath} does not exist`]
+            };
         }
 
         if (this._inProgressMap.has(tracing.id)) {
@@ -88,7 +99,7 @@ export class TransformManager {
                 }
             });
         } else {
-            setTimeout(() => performNodeMap(tracing.id, swcTracing.id, registrationTransform.id), 0);
+            setTimeout(() => performNodeMap(swcTracing.id, registrationTransform.id, tracing.id), 0);
         }
 
         return {tracing: tracing, errors: []}
