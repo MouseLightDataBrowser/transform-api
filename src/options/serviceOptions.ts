@@ -14,8 +14,8 @@ export interface IServiceOptions {
 const configuration: IServiceOptions = {
     port: 5000,
     graphQLEndpoint: "/graphql",
-    ccfv25OntologyPath: "/groups/mousebrainmicro/neuron-browser/registration/OntologyAtlas.h5",
-    ccfv30OntologyPath: "/groups/mousebrainmicro/neuron-browser/registration/ccfv30_raw.nrrd",
+    ccfv25OntologyPath: "/groups/mousebrainmicro/mousebrainmicro/neuron-database/ontology/OntologyAtlas.h5",
+    ccfv30OntologyPath: "/groups/mousebrainmicro/mousebrainmicro/neuron-database/ontology/ccfv30_raw.nrrd",
     release: "public",
     version: ""
 };
