@@ -3,7 +3,8 @@ import {DataTypes, HasManyGetAssociationsMixin, Sequelize} from "sequelize";
 import {BaseModel} from "../baseModel";
 import {TracingNode} from "./tracingNode";
 import {SwcTracing} from "../swc/swcTracing";
-import {BrainCompartment} from "./brainCompartmentContents";
+import {CcfV25BrainCompartment} from "./ccfv25BrainCompartmentContents";
+import {CcfV30BrainCompartment} from "./ccfV30BrainCompartmentContents";
 
 export enum ExportFormat {
     SWC = 0,
@@ -20,7 +21,8 @@ export class Tracing extends BaseModel {
     public transformedAt?: Date;
 
     public getNodes!: HasManyGetAssociationsMixin<TracingNode>;
-    public getCompartments!: HasManyGetAssociationsMixin<BrainCompartment>;
+    public getV25Compartments!: HasManyGetAssociationsMixin<CcfV25BrainCompartment>;
+    public getV30Compartments!: HasManyGetAssociationsMixin<CcfV30BrainCompartment>;
 
     public nodes?: TracingNode[];
 
@@ -61,5 +63,6 @@ export const modelInit = (sequelize: Sequelize) => {
 
 export const modelAssociate = () => {
     Tracing.hasMany(TracingNode, {foreignKey: "tracingId", as: "nodes"});
-    Tracing.hasMany(BrainCompartment, {foreignKey: "tracingId", as: "compartments"});
+    Tracing.hasMany(CcfV25BrainCompartment, {foreignKey: "tracingId", as: "v25Compartments"});
+    Tracing.hasMany(CcfV30BrainCompartment, {foreignKey: "tracingId", as: "v30Compartments"});
 };

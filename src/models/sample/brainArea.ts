@@ -87,8 +87,8 @@ export class BrainArea extends BaseModel {
         if (this._brainAreaMap.size === 0) {
             (await BrainArea.findAll()).map(a => this._brainAreaMap.set(a.id, a));
         }
-        if (node.brainAreaId) {
-            return this._brainAreaMap.get(node.brainAreaId);
+        if (node.brainAreaIdCcfV25) {
+            return this._brainAreaMap.get(node.brainAreaIdCcfV25);
         } else {
             return null;
         }

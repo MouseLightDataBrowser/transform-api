@@ -14,7 +14,7 @@ import {INodePage, IPageInput, TracingNode} from "../models/transform/tracingNod
 import {ITransformResult, TransformManager} from "../transform/transformManager";
 import {IFilterInput} from "./serverResolvers";
 import {operatorIdValueMap} from "../models/search/queryOperator";
-import {BrainCompartment} from "../models/transform/brainCompartmentContents";
+import {BrainCompartment} from "../models/transform/ccfv25BrainCompartmentContents";
 import {Neuron} from "../models/sample/neuron";
 import {BrainArea} from "../models/sample/brainArea";
 import {TracingStructure} from "../models/swc/tracingStructure";

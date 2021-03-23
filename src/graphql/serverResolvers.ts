@@ -21,7 +21,7 @@ import {Neuron} from "../models/sample/neuron";
 import {SwcTracing} from "../models/swc/swcTracing";
 import {RegistrationTransform} from "../models/sample/transform";
 import {SwcNode} from "../models/swc/swcNode";
-import {BrainCompartment} from "../models/transform/brainCompartmentContents";
+import {BrainCompartment} from "../models/transform/ccfv25BrainCompartmentContents";
 
 interface IIdOnlyArguments {
     id: string;

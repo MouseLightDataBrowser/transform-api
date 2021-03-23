@@ -17,7 +17,21 @@ export interface INodePage {
     nodes: TracingNode[];
 }
 
-export class TracingNode extends BaseModel {
+export interface ITracingNode {
+    swcNodeId: string;
+    sampleNumber: number;
+    parentNumber: number;
+    x: number;
+    y: number;
+    z: number;
+    radius: number;
+    lengthToParent: number;
+    structureIdentifierId: string;
+    brainAreaIdCcfV25: string;
+    brainAreaIdCcfV30: string;
+}
+
+export class TracingNode extends BaseModel implements ITracingNode {
     public swcNodeId: string;
     public sampleNumber: number;
     public parentNumber: number;
@@ -27,7 +41,8 @@ export class TracingNode extends BaseModel {
     public radius: number;
     public lengthToParent: number;
     public structureIdentifierId: string;
-    public brainAreaId: string;
+    public brainAreaIdCcfV25: string;
+    public brainAreaIdCcfV30: string;
 
     public getTracing!: BelongsToGetAssociationMixin<Tracing>;
 
@@ -77,7 +92,8 @@ export const modelInit = (sequelize: Sequelize) => {
         z: DataTypes.DOUBLE,
         // Outside refs
         swcNodeId: DataTypes.UUID,
-        brainAreaId: DataTypes.UUID
+        brainAreaIdCcfV25: DataTypes.UUID,
+        brainAreaIdCcfV30: DataTypes.UUID
     }, {
         timestamps: true,
         paranoid: false,
