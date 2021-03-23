@@ -15,7 +15,9 @@ async function start() {
 
     const options = ExampleOptions;
 
-    options.swcTracingIds.map(async (swcTracingId: string, index: number) => {
-        await performNodeMap(swcTracingId, null, options.tracingIds[index], false, options.registrationPath);
-    })
+    await options.swcTracingIds.reduce(async (prev: Promise<boolean>, curr: string, index: number) => {
+        await prev;
+
+        return performNodeMap(curr, null, options.tracingIds[index], false, options.registrationPath);
+    }, Promise.resolve(true));
 }

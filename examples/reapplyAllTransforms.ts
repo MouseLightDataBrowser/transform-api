@@ -15,8 +15,17 @@ async function start() {
 
     const allswc = await SwcTracing.findAll();
 
-    await Promise.all(allswc.map(async (swcTracing: SwcTracing) => {
-        const tracing = await Tracing.findOne({where: {swcTracingId: swcTracing.id}})
-        await performNodeMap(swcTracing.id, tracing.registrationTransformId, tracing.id, false);
-    }));
+    await allswc.reduce(async (prev: Promise<boolean>, curr: SwcTracing) => {
+        await prev;
+
+        const tracing = await Tracing.findOne({where: {swcTracingId: curr.id}});
+
+        if (tracing != null) {
+            return performNodeMap(curr.id, tracing.registrationTransformId, tracing.id, false);
+        } else {
+            debug(`tracing not found for swc tracing ${curr.id}`);
+
+            return Promise.resolve(false);
+        }
+    }, Promise.resolve(true));
 }

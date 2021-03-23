@@ -12,7 +12,7 @@ Reading HDF5 files will need to be updated (e.g., reapply above additions to the
 
 ### Usage
 
-#####Full Swc Tracing Query
+##### Full Swc Tracing Query
 ````
 {
   swcTracings {

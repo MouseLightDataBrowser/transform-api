@@ -10,9 +10,9 @@ WORKDIR /app
 
 COPY dist .
 
-RUN yarn global add sequelize-cli
+RUN yarn global add sequelize-cli@5 --ignore-engines
 
-RUN yarn install --production=true
+RUN yarn install --production=true --ignore-engines
 
 RUN groupadd -g 1097 mousebrainmicro
 RUN adduser -u 7700649 --disabled-password --gecos '' mluser

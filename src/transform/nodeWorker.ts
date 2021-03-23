@@ -1,4 +1,5 @@
 import * as fs from "fs";
+
 const hdf5 = require("hdf5").hdf5;
 const Access = require("hdf5/lib/globals").Access;
 
@@ -20,23 +21,32 @@ import {ITracingNode, TracingNode} from "../models/transform/tracingNode";
 import {NrrdFile} from "../io/nrrd";
 import {CcfV30BrainCompartment} from "../models/transform/ccfV30BrainCompartmentContents";
 import uuid = require("uuid");
+import {RemoteDatabaseClient} from "../data-access/remoteDatabaseClient";
+import {SequelizeOptions} from "../options/databaseOptions";
 
 let tracingId = process.argv.length > 2 ? process.argv[2] : null;
 let swcTracingId = process.argv.length > 3 ? process.argv[3] : null;
 let registrationTransformId = process.argv.length > 4 ? process.argv[4] : null;
 
 if (tracingId && swcTracingId && registrationTransformId) {
-    performNodeMap(tracingId, swcTracingId, registrationTransformId, true).then((result) => {
-        if (result) {
-            process.exit(0);
-        } else {
-            process.exit(1);
-        }
-    }).catch((err) => {
-        console.error(err);
-        process.exit(2);
-    });
+    setTimeout(async () => {
+        try {
+            await RemoteDatabaseClient.Start("sample", SequelizeOptions.sample);
+            await RemoteDatabaseClient.Start("swc", SequelizeOptions.swc);
+            await RemoteDatabaseClient.Start("transform", SequelizeOptions.transform);
 
+            const result = await performNodeMap(tracingId, swcTracingId, registrationTransformId, true);
+
+            if (result) {
+                process.exit(0);
+            } else {
+                process.exit(1);
+            }
+        } catch (err) {
+            console.error(err);
+            process.exit(2);
+        }
+    }, 0);
 }
 
 interface IBrainCompartmentCounts {
@@ -48,6 +58,7 @@ interface IBrainCompartmentCounts {
 }
 
 export async function performNodeMap(swcTracingId: string, registrationTransformId: string, tracingId: string = null, isFork: boolean = false, locationOverride: string = null): Promise<boolean> {
+    debug(`performNodeMap | swc: ${swcTracingId} reg: ${registrationTransformId} tra: ${tracingId}`)
     const brainIdLookup = new Map<number, BrainArea>();
 
     const swcTracing = await SwcTracing.findOne({where: {id: swcTracingId}});

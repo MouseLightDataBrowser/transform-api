@@ -71,7 +71,7 @@ export class TransformManager {
             debug(`initiating transform for swc tracing ${swcTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
             debug(`\ttransform location ${registrationTransform.location}`);
 
-            const proc = fork(path.join(__dirname, "nodeWorker"), [tracing.id, swcTracing.id, registrationTransform.id], {
+            const proc = fork(path.join(__dirname, "nodeWorker"), [swcTracing.id, registrationTransform.id, tracing.id], {
                 silent: true,
                 execArgv: []
             });
