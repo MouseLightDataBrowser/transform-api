@@ -175,50 +175,42 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
 
                 const transformedInput = matrixMultiply(sourceLoc, transformMatrix);
 
-                const start = [0, ...transformedInput.reverse()];
+                let start = [0, ...transformedInput.reverse()];
 
-                if (isValidDataSetLocation(start, transformExtents)) {
-                    const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
-                        start: start,
-                        stride: stride,
-                        count: count
+                start = clampDataSetLocation(start, transformExtents);
+
+                const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
+                    start: start,
+                    stride: stride,
+                    count: count
+                });
+
+                // Squeeze
+                const transformedOutput = dataset.data[0][0][0];
+
+                transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
+
+                // In HDF5 z, y, x order after reverse.
+                const brainAreaInput = matrixMultiply([...transformedLocation, 1], brainTransformMatrix).reverse();
+                // const brainAreaInput = [0, 0, 0];
+                if (isValidBrainDataSetLocation(brainAreaInput, brainLookupExtents)) {
+                    const brainAreaStructureId = hdf5.readDatasetHyperSlab(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset, ba_dataset_ref.rank, {
+                        start: brainAreaInput,
+                        stride: [1, 1, 1],
+                        count: [1, 1, 1]
                     });
 
-                    // Squeeze
-                    const transformedOutput = dataset.data[0][0][0];
+                    const ccfv25StructureId = brainAreaStructureId.data[0][0][0];
 
-                    transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
-
-                    // In HDF5 z, y, x order after reverse.
-                    const brainAreaInput = matrixMultiply([...transformedLocation, 1], brainTransformMatrix).reverse();
-                    // const brainAreaInput = [0, 0, 0];
-                    if (isValidBrainDataSetLocation(brainAreaInput, brainLookupExtents)) {
-                        const brainAreaStructureId = hdf5.readDatasetHyperSlab(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset, ba_dataset_ref.rank, {
-                            start: brainAreaInput,
-                            stride: [1, 1, 1],
-                            count: [1, 1, 1]
-                        });
-
-                        const ccfv25StructureId = brainAreaStructureId.data[0][0][0];
-
-                        // debug(`node ${index} hdf5 brain structure id ${ccfv25StructureId}`);
-
-                        if (brainIdLookup.has(ccfv25StructureId)) {
-                            brainAreaIdCcfv25 = brainIdLookup.get(ccfv25StructureId).id;
-                        }
-
-                        const ccfv30StructureId = nrrdContent.findStructureId(brainAreaInput[0], brainAreaInput[1], brainAreaInput[2]);
-
-                        // debug(`node ${index} nrrd brain structure id ${ccfv30StructureId}`);
-
-                        if (brainIdLookup.has(ccfv30StructureId)) {
-                            brainAreaIdCcfv30 = brainIdLookup.get(ccfv30StructureId).id;
-                        }
-
-                        // debug(`location 0 ${brainAreaInput[1]} ${brainAreaInput[2]} ${brainAreaInput[2]} is outside brain extents`);
+                    if (brainIdLookup.has(ccfv25StructureId)) {
+                        brainAreaIdCcfv25 = brainIdLookup.get(ccfv25StructureId).id;
                     }
-                } else {
-                    // debug(`location 0 ${start[1]} ${start[2]} ${start[2]} is outside transform extents`);
+
+                    const ccfv30StructureId = nrrdContent.findStructureId(brainAreaInput[0], brainAreaInput[1], brainAreaInput[2]);
+
+                    if (brainIdLookup.has(ccfv30StructureId)) {
+                        brainAreaIdCcfv30 = brainIdLookup.get(ccfv30StructureId).id;
+                    }
                 }
             } catch (err) {
                 debug(index);
@@ -379,9 +371,14 @@ function matrixMultiply(loc, transform) {
     }).slice(0, 3);
 }
 
-function isValidDataSetLocation(location, extents): boolean {
-    // Stride is assumed to be 1, so check that location is than extents.
-    return (location[1] < extents[1]) && (location[2] < extents[2]) && (location[3] < extents[3]);
+function clampDataSetLocation(location: number[], extents: number[]): number[] {
+    // Stride is assumed to be 1, so check that location is clamped to extents.
+
+    location[1] = Math.min(Math.max(0, location[1]), extents[1] - 1);
+    location[2] = Math.min(Math.max(0, location[2]), extents[2] - 1);
+    location[3] = Math.min(Math.max(0, location[3]), extents[3] - 1);
+
+    return location;
 }
 
 function isValidBrainDataSetLocation(location, extents): boolean {

@@ -1,6 +1,6 @@
 {
   "name": "mnb-transform-api",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "private": true,
   "main": "dist/app.js",
   "repository": "https://github.com/MouseLightPipeline/mnb-transform-api.git",
