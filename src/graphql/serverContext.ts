@@ -14,7 +14,7 @@ import {INodePage, IPageInput, TracingNode} from "../models/transform/tracingNod
 import {ITransformResult, TransformManager} from "../transform/transformManager";
 import {IFilterInput} from "./serverResolvers";
 import {operatorIdValueMap} from "../models/search/queryOperator";
-import {BrainCompartment} from "../models/transform/ccfv25BrainCompartmentContents";
+import {CcfV25BrainCompartment} from "../models/transform/ccfv25BrainCompartmentContents";
 import {Neuron} from "../models/sample/neuron";
 import {BrainArea} from "../models/sample/brainArea";
 import {TracingStructure} from "../models/swc/tracingStructure";
@@ -48,7 +48,7 @@ export interface IDeleteTracingOutput {
 
 export interface ITracingCompartmentOutput {
     tracing: Tracing;
-    compartments: BrainCompartment[];
+    compartments: CcfV25BrainCompartment[];
 }
 
 export interface ICompartmentQueryOutputPage {
@@ -473,8 +473,8 @@ export class GraphQLServerContext {
         return StructureIdentifier.findByPk(node.structureIdentifierId)
     }
 
-    public async getBrainCompartmentContents(): Promise<BrainCompartment[]> {
-        return BrainCompartment.findAll({});
+    public async getBrainCompartmentContents(): Promise<CcfV25BrainCompartment[]> {
+        return CcfV25BrainCompartment.findAll({});
     }
 
     public async getUntransformedSwc(): Promise<SwcTracing[]> {
@@ -522,7 +522,7 @@ export class GraphQLServerContext {
 
             try {
                 await Tracing.sequelize.transaction(async (t) => {
-                    await BrainCompartment.destroy({where: {tracingId: id}, transaction: t});
+                    await CcfV25BrainCompartment.destroy({where: {tracingId: id}, transaction: t});
 
                     await TracingNode.destroy({where: {tracingId: id}, transaction: t});
 
@@ -759,7 +759,7 @@ export class GraphQLServerContext {
         const queries = await Promise.all(promises);
 
         const resultPromises = queries.map(async (query) => {
-            return BrainCompartment.findAll(query);
+            return CcfV25BrainCompartment.findAll(query);
         });
 
         // An array (one for each filter entry) of an array of compartments (all returned for each filter).
@@ -807,7 +807,9 @@ export class GraphQLServerContext {
                 const nIdx = neuronLookup.indexOf(swcTracing.neuronId);
                 const neuron = neurons[nIdx];
 
-                neuron.tracings.push(t);
+                if (neuron != null) {
+                    neuron.tracings.push(t);
+                }
             });
 
             return neurons;
@@ -842,15 +844,15 @@ export class GraphQLServerContext {
 
         const queries = await Promise.all(promises);
 
-        const resultPromises: Promise<BrainCompartment[]>[] = queries.map(async (query) => {
-            return BrainCompartment.findAll(query);
+        const resultPromises: Promise<CcfV25BrainCompartment[]>[] = queries.map(async (query) => {
+            return CcfV25BrainCompartment.findAll(query);
         });
 
         // An array (one for each filter entry) of an array of compartments (all returned for each filter).
-        const results: BrainCompartment[][] = await Promise.all(resultPromises);
+        const results: CcfV25BrainCompartment[][] = await Promise.all(resultPromises);
 
         // The above flattened and unique-ed would be fine for just "or", but need to apply "and" where applicable.
-        let compartments: BrainCompartment[] = results.reduce((prev, curr, index) => {
+        let compartments: CcfV25BrainCompartment[] = results.reduce((prev, curr, index) => {
             if (index === 0) {
                 return curr;
             }

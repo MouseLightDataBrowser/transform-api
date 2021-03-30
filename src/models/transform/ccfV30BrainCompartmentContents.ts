@@ -34,5 +34,5 @@ export const modelInit = (sequelize: Sequelize) => {
 };
 
 export const modelAssociate = () => {
-    CcfV30BrainCompartment.belongsTo(Tracing, {foreignKey: "tracingId"});
+    CcfV30BrainCompartment.belongsTo(Tracing, {foreignKey: "tracingId", as: "tracing"});
 };

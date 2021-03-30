@@ -1,6 +1,6 @@
 {
   "name": "mnb-transform-api",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "private": true,
   "main": "dist/app.js",
   "repository": "https://github.com/MouseLightPipeline/mnb-transform-api.git",
@@ -9,7 +9,7 @@
   "dockerRepository": "mouselightdatabrowser",
   "dockerImageName": "transform-api",
   "scripts": {
-    "debug": "DEBUG=mnb:transform* node --trace-warnings --max-old-space-size=8192 --optimize-for-size src/app.js",
+    "debug": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION --trace-warnings --max-old-space-size=8192 --optimize-for-size src/app.js",
     "test-transform": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/transformBatch.js",
     "reapply-all": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/reapplyAllTransforms.js",
     "docker-build": "gulp docker-build",
