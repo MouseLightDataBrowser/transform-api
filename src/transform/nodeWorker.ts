@@ -363,7 +363,7 @@ async function updateBrainCompartmentContent(brainCompartmentTable, compartmentM
         });
     }
 
-    await CcfV30BrainCompartment.bulkCreate(compartments)
+    await brainCompartmentTable.bulkCreate(compartments)
 
     debug(`inserted ${compartments.length} brain compartment stats`);
 }
