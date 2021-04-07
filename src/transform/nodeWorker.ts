@@ -12,7 +12,6 @@ import {Tracing} from "../models/transform/tracing";
 import {StructureIdentifier, StructureIdentifiers} from "../models/swc/structureIdentifier";
 import {BrainArea} from "../models/sample/brainArea";
 import {SwcTracing} from "../models/swc/swcTracing";
-import {RegistrationTransform} from "../models/sample/transform";
 import {
     BrainCompartmentMutationData,
     CcfV25BrainCompartment
@@ -24,18 +23,18 @@ import uuid = require("uuid");
 import {RemoteDatabaseClient} from "../data-access/remoteDatabaseClient";
 import {SequelizeOptions} from "../options/databaseOptions";
 
-let tracingId = process.argv.length > 2 ? process.argv[2] : null;
-let swcTracingId = process.argv.length > 3 ? process.argv[3] : null;
-let registrationTransformId = process.argv.length > 4 ? process.argv[4] : null;
+let swcTracingId = process.argv.length > 2 ? process.argv[2] : null;
+let tracingId = process.argv.length > 3 ? process.argv[3] : null;
+let registrationPath = process.argv.length > 4 ? process.argv[4] : null;
 
-if (tracingId && swcTracingId && registrationTransformId) {
+if (tracingId && swcTracingId && registrationPath) {
     setTimeout(async () => {
         try {
             await RemoteDatabaseClient.Start("sample", SequelizeOptions.sample);
             await RemoteDatabaseClient.Start("swc", SequelizeOptions.swc);
             await RemoteDatabaseClient.Start("transform", SequelizeOptions.transform);
 
-            const result = await performNodeMap(tracingId, swcTracingId, registrationTransformId, true);
+            const result = await performNodeMap(swcTracingId, tracingId, registrationPath, true);
 
             if (result) {
                 process.exit(0);
@@ -57,8 +56,7 @@ interface IBrainCompartmentCounts {
     end: number;
 }
 
-export async function performNodeMap(swcTracingId: string, registrationTransformId: string, tracingId: string = null, isFork: boolean = false, locationOverride: string = null): Promise<boolean> {
-    debug(`performNodeMap | swc: ${swcTracingId} reg: ${registrationTransformId} tra: ${tracingId}`)
+export async function performNodeMap(swcTracingId: string, tracingId: string = null, transformPath: string, isFork: boolean = false): Promise<boolean> {
     const brainIdLookup = new Map<number, BrainArea>();
 
     const swcTracing = await SwcTracing.findOne({where: {id: swcTracingId}});
@@ -67,25 +65,13 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
         return false;
     }
 
-    let transformPath = locationOverride;
-
-    if (transformPath === null) {
-        const registrationTransform = await RegistrationTransform.findOne({where: {id: registrationTransformId}});
-
-        if (!registrationTransform) {
-            return false;
-        }
-
-        transformPath = registrationTransform.location;
-    }
-
     if (!fs.existsSync(transformPath)) {
-        debug(`transform ${transformPath} is unavailable`);
+        logMessage(`transform ${transformPath} is unavailable`);
         return false;
     }
 
     if (brainIdLookup.size === 0) {
-        debug("populating brain area id lookup");
+        logMessage("populating brain area id lookup");
         const brainAreas = await
             BrainArea.findAll();
 
@@ -95,7 +81,7 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
     }
 
     try {
-        debug("loading swc nodes");
+        logMessage("loading swc nodes");
 
         const swcNodes = await swcTracing.getNodes({
             include: [{
@@ -127,7 +113,7 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
 
         const transformExtents = dataset_ref.dims;
 
-        debug(`transform extents (HDF5 order) ${transformExtents[0]} ${transformExtents[1]} ${transformExtents[2]} ${transformExtents[3]}`);
+        logMessage(`transform extents (HDF5 order) ${transformExtents[0]} ${transformExtents[1]} ${transformExtents[2]} ${transformExtents[3]}`);
 
         const ba_dataset_ref = hdf5.openDataset(brainAreaReferenceFile.id, "OntologyAtlas", {
             count: [1, 1, 1]
@@ -135,15 +121,15 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
 
         const brainLookupExtents = ba_dataset_ref.dims;
 
-        debug(`brain lookup extents (HDF5 order) ${brainLookupExtents[0]} ${brainLookupExtents[1]} ${brainLookupExtents[2]}`);
+        logMessage(`brain lookup extents (HDF5 order) ${brainLookupExtents[0]} ${brainLookupExtents[1]} ${brainLookupExtents[2]}`);
 
         const nrrdContent = new NrrdFile(ServiceOptions.ccfv30OntologyPath);
 
         nrrdContent.init();
 
-        debug(`brain lookup extents (nrrd30 order) ${nrrdContent.size[0]} ${nrrdContent.size[1]} ${nrrdContent.size[2]}`);
+        logMessage(`brain lookup extents (nrrd30 order) ${nrrdContent.size[0]} ${nrrdContent.size[1]} ${nrrdContent.size[2]}`);
 
-        debug(`transforming ${swcNodes.length} nodes`);
+        logMessage(`transforming ${swcNodes.length} nodes`);
 
         const compartmentMapCcfv25 = new Map<string, IBrainCompartmentCounts>();
         const compartmentMapCcfv30 = new Map<string, IBrainCompartmentCounts>();
@@ -157,10 +143,8 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
         };
 
         let nodes: ITracingNode[] = swcNodes.map((swcNode, index) => {
-            if (isFork) {
-                if (index % 100 === 0) {
-                    process.send({tracing: tracingId, status: {outputNodeCount: index}});
-                }
+            if (isFork && (index % 100 === 0)) {
+                process.send({tracing: tracingId, status: {outputNodeCount: index}});
             }
 
             let transformedLocation = [NaN, NaN, NaN];
@@ -175,53 +159,45 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
 
                 const transformedInput = matrixMultiply(sourceLoc, transformMatrix);
 
-                const start = [0, ...transformedInput.reverse()];
+                let start = [0, ...transformedInput.reverse()];
 
-                if (isValidDataSetLocation(start, transformExtents)) {
-                    const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
-                        start: start,
-                        stride: stride,
-                        count: count
+                start = clampDataSetLocation(start, transformExtents);
+
+                const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
+                    start: start,
+                    stride: stride,
+                    count: count
+                });
+
+                // Squeeze
+                const transformedOutput = dataset.data[0][0][0];
+
+                transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
+
+                // In HDF5 z, y, x order after reverse.
+                const brainAreaInput = matrixMultiply([...transformedLocation, 1], brainTransformMatrix).reverse();
+                // const brainAreaInput = [0, 0, 0];
+                if (isValidBrainDataSetLocation(brainAreaInput, brainLookupExtents)) {
+                    const brainAreaStructureId = hdf5.readDatasetHyperSlab(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset, ba_dataset_ref.rank, {
+                        start: brainAreaInput,
+                        stride: [1, 1, 1],
+                        count: [1, 1, 1]
                     });
 
-                    // Squeeze
-                    const transformedOutput = dataset.data[0][0][0];
+                    const ccfv25StructureId = brainAreaStructureId.data[0][0][0];
 
-                    transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
-
-                    // In HDF5 z, y, x order after reverse.
-                    const brainAreaInput = matrixMultiply([...transformedLocation, 1], brainTransformMatrix).reverse();
-                    // const brainAreaInput = [0, 0, 0];
-                    if (isValidBrainDataSetLocation(brainAreaInput, brainLookupExtents)) {
-                        const brainAreaStructureId = hdf5.readDatasetHyperSlab(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset, ba_dataset_ref.rank, {
-                            start: brainAreaInput,
-                            stride: [1, 1, 1],
-                            count: [1, 1, 1]
-                        });
-
-                        const ccfv25StructureId = brainAreaStructureId.data[0][0][0];
-
-                        // debug(`node ${index} hdf5 brain structure id ${ccfv25StructureId}`);
-
-                        if (brainIdLookup.has(ccfv25StructureId)) {
-                            brainAreaIdCcfv25 = brainIdLookup.get(ccfv25StructureId).id;
-                        }
-
-                        const ccfv30StructureId = nrrdContent.findStructureId(brainAreaInput[0], brainAreaInput[1], brainAreaInput[2]);
-
-                        // debug(`node ${index} nrrd brain structure id ${ccfv30StructureId}`);
-
-                        if (brainIdLookup.has(ccfv30StructureId)) {
-                            brainAreaIdCcfv30 = brainIdLookup.get(ccfv30StructureId).id;
-                        }
-
-                        // debug(`location 0 ${brainAreaInput[1]} ${brainAreaInput[2]} ${brainAreaInput[2]} is outside brain extents`);
+                    if (brainIdLookup.has(ccfv25StructureId)) {
+                        brainAreaIdCcfv25 = brainIdLookup.get(ccfv25StructureId).id;
                     }
-                } else {
-                    // debug(`location 0 ${start[1]} ${start[2]} ${start[2]} is outside transform extents`);
+
+                    const ccfv30StructureId = nrrdContent.findStructureId(brainAreaInput[0], brainAreaInput[1], brainAreaInput[2]);
+
+                    if (brainIdLookup.has(ccfv30StructureId)) {
+                        brainAreaIdCcfv30 = brainIdLookup.get(ccfv30StructureId).id;
+                    }
                 }
             } catch (err) {
-                debug(index);
+                logMessage(`${index}`);
                 console.error(err);
             }
 
@@ -259,7 +235,7 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
             };
         });
 
-        debug("transform complete");
+        logMessage("transform complete");
 
         hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
 
@@ -268,17 +244,17 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
         nrrdContent.close();
 
         if (!tracingId) {
-            debug(`completed ${nodes.length} nodes`);
-            debug(`resolved ${compartmentMapCcfv25.size} v25 node compartments`);
+            logMessage(`completed ${nodes.length} nodes`);
+            logMessage(`resolved ${compartmentMapCcfv25.size} v25 node compartments`);
 
             for (const entry of compartmentMapCcfv25.entries()) {
-                debug(`\t${entry[0]} ${entry[1].node}`);
+                logMessage(`\t${entry[0]} ${entry[1].node}`);
             }
 
-            debug(`resolved ${compartmentMapCcfv30.size} v30 node compartments`);
+            logMessage(`resolved ${compartmentMapCcfv30.size} v30 node compartments`);
 
             for (const entry of compartmentMapCcfv30.entries()) {
-                debug(`\t${entry[0]} ${entry[1].node}`);
+                logMessage(`\t${entry[0]} ${entry[1].node}`);
             }
 
             return true;
@@ -298,11 +274,11 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
             endCount: tracingCounts.end
         });
 
-        debug(`inserted ${nodes.length} nodes`);
+        logMessage(`inserted ${nodes.length} nodes`);
 
-        await updateBrainCompartmentContent(CcfV25BrainCompartment, compartmentMapCcfv25, tracing.id);
+        await updateBrainCompartmentContent(CcfV25BrainCompartment, compartmentMapCcfv25, tracing.id, isFork);
 
-        await updateBrainCompartmentContent(CcfV30BrainCompartment, compartmentMapCcfv30, tracing.id);
+        await updateBrainCompartmentContent(CcfV30BrainCompartment, compartmentMapCcfv30, tracing.id, isFork);
 
         return true;
     } catch (err) {
@@ -311,6 +287,10 @@ export async function performNodeMap(swcTracingId: string, registrationTransform
     }
 
     return false;
+
+    function logMessage(str: string) {
+        logMessage2(str, isFork);
+    }
 }
 
 function populateCompartmentMap(brainAreaId: string, compartmentMap: Map<string, IBrainCompartmentCounts>, swcNode: SwcNode) {
@@ -345,7 +325,7 @@ function populateCompartmentMap(brainAreaId: string, compartmentMap: Map<string,
     }
 }
 
-async function updateBrainCompartmentContent(brainCompartmentTable, compartmentMap: Map<string, IBrainCompartmentCounts>, tracingId: string) {
+async function updateBrainCompartmentContent(brainCompartmentTable, compartmentMap: Map<string, IBrainCompartmentCounts>, tracingId: string, isFork: boolean) {
     await brainCompartmentTable.destroy({where: {tracingId}, force: true});
 
     let compartments: BrainCompartmentMutationData[] = [];
@@ -365,7 +345,7 @@ async function updateBrainCompartmentContent(brainCompartmentTable, compartmentM
 
     await brainCompartmentTable.bulkCreate(compartments)
 
-    debug(`inserted ${compartments.length} brain compartment stats`);
+    logMessage2(`inserted ${compartments.length} brain compartment stats`, isFork);
 }
 
 /*
@@ -379,12 +359,25 @@ function matrixMultiply(loc, transform) {
     }).slice(0, 3);
 }
 
-function isValidDataSetLocation(location, extents): boolean {
-    // Stride is assumed to be 1, so check that location is than extents.
-    return (location[1] < extents[1]) && (location[2] < extents[2]) && (location[3] < extents[3]);
+function clampDataSetLocation(location: number[], extents: number[]): number[] {
+    // Stride is assumed to be 1, so check that location is clamped to extents.
+
+    location[1] = Math.min(Math.max(0, location[1]), extents[1] - 1);
+    location[2] = Math.min(Math.max(0, location[2]), extents[2] - 1);
+    location[3] = Math.min(Math.max(0, location[3]), extents[3] - 1);
+
+    return location;
 }
 
 function isValidBrainDataSetLocation(location, extents): boolean {
     // Stride is assumed to be 1, so check that location is than extents.
     return (location[0] < extents[0]) && (location[1] < extents[1]) && (location[2] < extents[2]);
+}
+
+function logMessage2(str: string, isFork: boolean) {
+    if (isFork) {
+        console.log(str);
+    } else {
+        debug(str);
+    }
 }

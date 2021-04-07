@@ -10,7 +10,16 @@ This was forked when nodejs 8.12 was the latest stable release. `yarn install` w
 
 Reading HDF5 files will need to be updated (e.g., reapply above additions to the latest hdf5.node) to build or run with a newer nodejs version.
 
-### Usage
+### Tools
+Reapply all transforms (using registration used for previous transform).
+```
+docker run -it --rm --network mnb_back_tier -e DATABASE_PW=${DATABASE_PW} -v ${TRANSFORM_VOL_EXT}:${TRANSFORM_VOL_INT}  mouselightdatabrowser/transform-api:1.6 /bin/bash
+
+export DEBUG=mnb:*
+export export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/local/lib
+```
+
+### API Usage
 
 ##### Full Swc Tracing Query
 ````
