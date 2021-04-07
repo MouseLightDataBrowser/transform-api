@@ -1,3 +1,5 @@
+import {TransformManager} from "../src/transform/transformManager";
+
 const debug = require("debug")("mnb:transform:examples:transform-only");
 
 import {RemoteDatabaseClient} from "../src/data-access/remoteDatabaseClient";
@@ -5,6 +7,9 @@ import {SequelizeOptions} from "../src/options/databaseOptions";
 import {performNodeMap} from "../src/transform/nodeWorker";
 import {SwcTracing} from "../src/models/swc/swcTracing";
 import {Tracing} from "../src/models/transform/tracing";
+import {RegistrationTransform} from "../src/models/sample/transform";
+
+const ChunkCount = process.argv.length > 2 ? parseInt(process.argv[2]) : 8;
 
 start().then().catch((err) => debug(err));
 
@@ -15,17 +20,39 @@ async function start() {
 
     const allswc = await SwcTracing.findAll();
 
-    await allswc.reduce(async (prev: Promise<boolean>, curr: SwcTracing) => {
-        await prev;
+    const pieces = splitArray(allswc, ChunkCount);
 
-        const tracing = await Tracing.findOne({where: {swcTracingId: curr.id}});
+    const promises = pieces.map(async (piece) => {
+        await piece.reduce(applyOne, Promise.resolve(true));
+    });
 
-        if (tracing != null) {
-            return performNodeMap(curr.id, tracing.registrationTransformId, tracing.id, false);
-        } else {
-            debug(`tracing not found for swc tracing ${curr.id}`);
+    await Promise.all(promises);
+}
 
-            return Promise.resolve(false);
-        }
-    }, Promise.resolve(true));
+async function applyOne(prev: Promise<boolean>, curr: SwcTracing): Promise<any> {
+    await prev;
+
+    const tracing = await Tracing.findOne({where: {swcTracingId: curr.id}});
+
+    const registration = await RegistrationTransform.findByPk(tracing.registrationTransformId);
+
+    if (tracing != null) {
+        return TransformManager.Instance().applyTransform(tracing, curr, registration);
+    } else {
+        debug(`tracing not found for swc tracing ${curr.id}`);
+
+        return Promise.resolve(false);
+    }
+}
+
+function splitArray<T>(array: Array<T>, chunkCount: number): Array<Array<T>> {
+    const output = [];
+
+    const chunkSize = Math.floor(array.length / chunkCount);
+
+    for (let idx = 0; idx < array.length; idx += chunkSize) {
+        output.push(array.slice(idx, idx + chunkSize));
+    }
+
+    return output;
 }

@@ -1,8 +1,12 @@
+import {RegistrationTransform} from "../models/sample/transform";
+
 const path = require("path");
 const fs = require("fs");
 const fork = require("child_process").fork;
 
 const debug = require("debug")("mnb:transform:transform-worker");
+
+const debugWorker = require("debug")("mnb:transform:transform-worker:fork");
 
 import {ServiceOptions} from "../options/serviceOptions";
 import {Tracing} from "../models/transform/tracing";
@@ -33,7 +37,7 @@ export class TransformManager {
         return tracing ? this._inProgressMap.get(tracing.id) : null;
     }
 
-    public async applyTransform(tracing: Tracing, swcTracing: SwcTracing, registrationTransform): Promise<ITransformResult> {
+    public async applyTransform(tracing: Tracing, swcTracing: SwcTracing, registrationTransform: RegistrationTransform, useForkOverride: boolean = null): Promise<ITransformResult> {
         if (!tracing || !swcTracing || !registrationTransform) {
             debug("one or more input object is null|undefined");
             return {tracing: null, errors: ["one or more input object is null|undefined"]};
@@ -65,44 +69,48 @@ export class TransformManager {
             return {tracing: null, errors: [`a transform for this tracing is already in progress`]};
         }
 
-        if (useFork) {
-            this._inProgressMap.set(tracing.id, {startedAt: new Date(), inputNodeCount: 0, outputNodeCount: 0});
+        return new Promise((resolve, reject) => {
+            if (useForkOverride ?? useFork) {
+                this._inProgressMap.set(tracing.id, {startedAt: new Date(), inputNodeCount: 0, outputNodeCount: 0});
 
-            debug(`initiating transform for swc tracing ${swcTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
-            debug(`\ttransform location ${registrationTransform.location}`);
+                debug(`initiating transform for swc tracing ${swcTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
+                debug(`\ttransform location ${registrationTransform.location}`);
 
-            const proc = fork(path.join(__dirname, "nodeWorker"), [swcTracing.id, registrationTransform.id, tracing.id], {
-                silent: true,
-                execArgv: []
-            });
+                const proc = fork(path.join(__dirname, "nodeWorker"), [swcTracing.id, tracing.id, registrationTransform.location], {
+                    silent: true,
+                    execArgv: []
+                });
 
-            proc.stdout.on("data", data => {
-                console.log(`${data.slice(0, -1)}`);
-            });
+                proc.stdout.on("data", data => {
+                    debugWorker(`${data.slice(0, -1)}`);
+                });
 
-            proc.stderr.on("data", data => {
-                console.error(`${data.slice(0, -1)}`);
-            });
+                proc.stderr.on("data", data => {
+                    console.error(`${data.slice(0, -1)}`);
+                });
 
-            proc.on("exit", code => {
-                this._inProgressMap.delete(tracing.id);
-                debug(`node worker exit: ${code}`);
-            });
+                proc.on("exit", code => {
+                    this._inProgressMap.delete(tracing.id);
+                    resolve({tracing: tracing, errors: []});
+                    debugWorker(`node worker exit: ${code}`);
+                });
 
-            proc.on("message", data => {
-                if (data.tracing && data.status) {
-                    if (this._inProgressMap.has(data.tracing)) {
-                        let status = this._inProgressMap.get(data.tracing);
-                        status = Object.assign(status, data.status);
-                        this._inProgressMap.set(data.tracing, status);
+                proc.on("message", data => {
+                    if (data.tracing && data.status) {
+                        if (this._inProgressMap.has(data.tracing)) {
+                            let status = this._inProgressMap.get(data.tracing);
+                            status = Object.assign(status, data.status);
+                            this._inProgressMap.set(data.tracing, status);
+                        }
                     }
-                }
-            });
-        } else {
-            setTimeout(() => performNodeMap(swcTracing.id, registrationTransform.id, tracing.id), 0);
-        }
-
-        return {tracing: tracing, errors: []}
+                });
+            } else {
+                setTimeout(async () => {
+                    await performNodeMap(swcTracing.id, tracing.id, registrationTransform.location);
+                    resolve({tracing: tracing, errors: []});
+                }, 0);
+            }
+        });
     }
 }
 
