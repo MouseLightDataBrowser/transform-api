@@ -22,6 +22,7 @@ import {SwcTracing} from "../models/swc/swcTracing";
 import {SwcNode} from "../models/swc/swcNode";
 import {RegistrationTransform} from "../models/sample/transform";
 import {InfluxStorageManager} from "../data-access/influxStorageManager";
+import {CcfV30BrainCompartment} from "../models/transform/ccfV30BrainCompartmentContents";
 
 export interface ITracingsQueryInput {
     offset?: number;
@@ -523,6 +524,8 @@ export class GraphQLServerContext {
             try {
                 await Tracing.sequelize.transaction(async (t) => {
                     await CcfV25BrainCompartment.destroy({where: {tracingId: id}, transaction: t});
+
+                    await CcfV30BrainCompartment.destroy({where: {tracingId: id}, transaction: t});
 
                     await TracingNode.destroy({where: {tracingId: id}, transaction: t});
 
