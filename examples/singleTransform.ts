@@ -1,6 +1,6 @@
 import {ExampleOptions} from "./exampleOptions";
 
-const debug = require("debug")("mnb:transform:examples:transform-only");
+const debug = require("debug")("mnb:transform:examples:single-transform");
 
 import {RemoteDatabaseClient} from "../src/data-access/remoteDatabaseClient";
 import {SequelizeOptions} from "../src/options/databaseOptions";
@@ -10,6 +10,8 @@ import {Tracing} from "../src/models/transform/tracing";
 import {SwcTracing} from "../src/models/swc/swcTracing";
 import {RegistrationTransform} from "../src/models/sample/transform";
 import uuid = require("uuid");
+
+const overrideUseFork = process.argv.length > 2 ? parseInt(process.argv[2]) != 0 : null
 
 start().then().catch((err) => debug(err));
 
@@ -30,7 +32,8 @@ async function start() {
         registration.name = options.registrationPath;
         registration.location = options.registrationPath;
 
-        await TransformManager.Instance().applyTransform(tracing, swcTracing, registration);
+        debug(`apple transform for tracing ${tracing.id}`);
+        await TransformManager.Instance().applyTransform(tracing, swcTracing, registration, overrideUseFork);
 
         return true;
     }, Promise.resolve(true));

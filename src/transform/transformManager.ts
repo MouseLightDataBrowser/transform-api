@@ -12,6 +12,7 @@ import {ServiceOptions} from "../options/serviceOptions";
 import {Tracing} from "../models/transform/tracing";
 import {SwcTracing} from "../models/swc/swcTracing";
 import {performNodeMap} from "./nodeWorker";
+import {ITransformOperationProgress} from "./transformOperation";
 
 export interface ITransformProgress {
     startedAt: Date;
@@ -95,12 +96,12 @@ export class TransformManager {
                     debugWorker(`node worker exit: ${code}`);
                 });
 
-                proc.on("message", data => {
-                    if (data.tracing && data.status) {
-                        if (this._inProgressMap.has(data.tracing)) {
-                            let status = this._inProgressMap.get(data.tracing);
+                proc.on("message", (data: ITransformOperationProgress)=> {
+                    if (data.tracingId && data.status) {
+                        if (this._inProgressMap.has(data.tracingId)) {
+                            let status = this._inProgressMap.get(data.tracingId);
                             status = Object.assign(status, data.status);
-                            this._inProgressMap.set(data.tracing, status);
+                            this._inProgressMap.set(data.tracingId, status);
                         }
                     }
                 });
