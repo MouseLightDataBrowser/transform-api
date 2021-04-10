@@ -44,9 +44,15 @@ export class TransformManager {
             return {tracing: null, errors: ["one or more input object is null|undefined"]};
         }
 
-        if (!fs.existsSync(registrationTransform.location)) {
-            debug(`transform file ${registrationTransform.location} does not exist`);
-            return {tracing: null, errors: [`transform file ${registrationTransform.location} does not exist`]};
+        let registrationLocation = registrationTransform.location;
+
+        if (ServiceOptions.registrationSrcMap) {
+            registrationLocation = registrationLocation.replace(ServiceOptions.registrationSrcMap, ServiceOptions.registrationDstMap);
+        }
+
+        if (!fs.existsSync(registrationLocation)) {
+            debug(`transform file ${registrationLocation} does not exist`);
+            return {tracing: null, errors: [`transform file ${registrationLocation} does not exist`]};
         }
 
         if (!fs.existsSync(ServiceOptions.ccfv25OntologyPath)) {
@@ -75,9 +81,9 @@ export class TransformManager {
                 this._inProgressMap.set(tracing.id, {startedAt: new Date(), inputNodeCount: 0, outputNodeCount: 0});
 
                 debug(`initiating transform for swc tracing ${swcTracing.filename} using transform ${registrationTransform.name || registrationTransform.id}`);
-                debug(`\ttransform location ${registrationTransform.location}`);
+                debug(`\ttransform location ${registrationLocation}`);
 
-                const proc = fork(path.join(__dirname, "nodeWorker"), [swcTracing.id, tracing.id, registrationTransform.location], {
+                const proc = fork(path.join(__dirname, "nodeWorker"), [swcTracing.id, tracing.id, registrationLocation], {
                     silent: true,
                     execArgv: []
                 });
@@ -107,7 +113,7 @@ export class TransformManager {
                 });
             } else {
                 setTimeout(async () => {
-                    await performNodeMap(swcTracing.id, tracing.id, registrationTransform.location);
+                    await performNodeMap(swcTracing.id, tracing.id, registrationLocation);
                     resolve({tracing: tracing, errors: []});
                 }, 0);
             }

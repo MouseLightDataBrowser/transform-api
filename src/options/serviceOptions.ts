@@ -7,6 +7,8 @@ export interface IServiceOptions {
     graphQLEndpoint: string;
     ccfv25OntologyPath: string;
     ccfv30OntologyPath: string;
+    registrationSrcMap: string;
+    registrationDstMap: string;
     release: string;
     version: string;
 }
@@ -16,6 +18,8 @@ const configuration: IServiceOptions = {
     graphQLEndpoint: "/graphql",
     ccfv25OntologyPath: "/groups/mousebrainmicro/mousebrainmicro/neuron-database/ontology/OntologyAtlas.h5",
     ccfv30OntologyPath: "/groups/mousebrainmicro/mousebrainmicro/neuron-database/ontology/ccfv30_raw.nrrd",
+    registrationSrcMap: null,
+    registrationDstMap: null,
     release: "public",
     version: ""
 };
@@ -28,6 +32,9 @@ function loadConfiguration(): IServiceOptions {
 
     c.ccfv25OntologyPath = process.env.CCF_25_ONTOLOGY_PATH || c.ccfv25OntologyPath;
     c.ccfv30OntologyPath = process.env.CCF_30_ONTOLOGY_PATH || c.ccfv30OntologyPath;
+
+    c.registrationSrcMap = process.env.TRANSFORM_SRC_MAP || c.registrationSrcMap;
+    c.registrationDstMap = process.env.TRANSFORM_DST_MAP || c.registrationDstMap;
 
     c.release = process.env.NEURON_BROWSER_RELEASE || c.release;
     c.version = readSystemVersion();
