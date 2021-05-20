@@ -10,8 +10,9 @@
   "dockerImageName": "transform-api",
   "scripts": {
     "debug": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION --trace-warnings --max-old-space-size=8192 --optimize-for-size src/app.js",
+    "reapply-all": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION tools/reapplyAllTransforms.js",
+    "swc2json": "DEBUG=mnb:* node $NODE_DEBUG_OPTION tools/swc2json.js",
     "single-transform": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/singleTransform.js",
-    "reapply-all": "DEBUG=mnb:transform* node $NODE_DEBUG_OPTION examples/reapplyAllTransforms.js",
     "docker-build": "gulp docker-build",
     "docker-release": "gulp release",
     "migrate": "tsc && ./migrate.sh"
@@ -34,17 +35,20 @@
     "apollo-server-express": "^2.9.7",
     "archiver": "^3.1.1",
     "big-json": "^3.0.0",
+    "byline": "^5.0.0",
+    "cli-progress": "^3.9.0",
     "dataloader": "^1.4.0",
     "debug": "^4.1.1",
     "express": "^4.17.1",
     "graphql": "^14.5.8",
     "hdf5": "https://github.com/pedson/hdf5.node.git",
     "influx": "^5.5.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "pg": "^7.12.1",
     "sanitize-filename": "^1.6.3",
     "sequelize": "^5.21.2",
-    "uuid": "^3.3.3"
+    "uuid": "^3.3.3",
+    "yargs": "15"
   },
   "devDependencies": {
     "@types/archiver": "^3.0.0",

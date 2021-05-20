@@ -4,6 +4,17 @@ import {BaseModel} from "../baseModel";
 import {StructureIdentifier} from "./structureIdentifier";
 import {SwcTracing} from "./swcTracing";
 
+export interface ISwcNode {
+    id?: string;
+    sampleNumber: number;
+    x: number;
+    y: number;
+    z: number;
+    radius: number;
+    parentNumber: number;
+    structureIdentifier?: StructureIdentifier;
+}
+
 export type SwcNodeMutationData = {
     id?: string;
     swcTracingId: string | null;
@@ -15,7 +26,7 @@ export type SwcNodeMutationData = {
     parentNumber: number;
 }
 
-export class SwcNode extends BaseModel {
+export class SwcNode extends BaseModel implements ISwcNode{
     public sampleNumber: number;
     public x: number;
     public y: number;

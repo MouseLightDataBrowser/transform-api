@@ -1,5 +1,3 @@
-import * as fs from "fs";
-
 const debug = require("debug")("mnb:transform:node-worker");
 
 import {SequelizeOptions} from "../options/databaseOptions";
@@ -7,6 +5,7 @@ import {BrainArea} from "../models/sample/brainArea";
 import {SwcTracing} from "../models/swc/swcTracing";
 import {RemoteDatabaseClient} from "../data-access/remoteDatabaseClient";
 import {ITransformOperationProgress, TransformOperation} from "./transformOperation";
+import {ITracing} from "../models/transform/tracing";
 
 let swcTracingId = process.argv.length > 2 ? process.argv[2] : null;
 let tracingId = process.argv.length > 3 ? process.argv[3] : null;
@@ -19,7 +18,9 @@ if (tracingId && swcTracingId && registrationPath) {
             await RemoteDatabaseClient.Start("swc", SequelizeOptions.swc);
             await RemoteDatabaseClient.Start("transform", SequelizeOptions.transform);
 
-            const result = await performNodeMap(swcTracingId, tracingId, registrationPath, true);
+            const swcTracing = await SwcTracing.findOneForTransform(swcTracingId);
+
+            const result = await performNodeMap(swcTracing, tracingId, registrationPath, true);
 
             if (result) {
                 process.exit(0);
@@ -30,22 +31,15 @@ if (tracingId && swcTracingId && registrationPath) {
             console.error(err);
             process.exit(2);
         }
-    }, 0);
+    }, 0)
 }
 
-export async function performNodeMap(swcTracingId: string, tracingId: string = null, transformPath: string, isFork: boolean = false): Promise<boolean> {
+export async function performNodeMap(swcTracing: SwcTracing, tracingId: string = null, transformPath: string, isFork: boolean = false): Promise<ITracing> {
     const brainIdLookup = new Map<number, BrainArea>();
-
-    const swcTracing = await SwcTracing.findOne({where: {id: swcTracingId}});
 
     if (!swcTracing) {
         logError("SWC input tracing is null");
-        return false;
-    }
-
-    if (!fs.existsSync(transformPath)) {
-        logError(`transform ${transformPath} is unavailable`);
-        return false;
+        return null;
     }
 
     if (brainIdLookup.size === 0) {
@@ -64,20 +58,19 @@ export async function performNodeMap(swcTracingId: string, tracingId: string = n
             swcTracing,
             transformPath,
             tracingId,
-            isSwcInCcfSpace: false,
             logger: logMessage,
             progressDelegate: onProgressMessage
         });
 
         await operation.processTracing();
 
-        return true;
+        return operation.Tracing;
     } catch (err) {
         logError("transform exception");
         logError(err.toString().slice(0, 250));
     }
 
-    return false;
+    return null;
 
     function logMessage(str: any) {
         if (isFork) {

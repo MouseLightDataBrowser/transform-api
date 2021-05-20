@@ -25,7 +25,7 @@ export interface ITransformResult {
     errors: string[];
 }
 
-const useFork = true;
+const useFork = false;
 
 export class TransformManager {
     private _inProgressMap = new Map<string, ITransformProgress>();
@@ -113,7 +113,11 @@ export class TransformManager {
                 });
             } else {
                 setTimeout(async () => {
-                    await performNodeMap(swcTracing.id, tracing.id, registrationLocation);
+                    // Reload with nodes and required data for transform.
+                    const fullSwcTracing = await SwcTracing.findOneForTransform(swcTracing.id);
+
+                    await performNodeMap(fullSwcTracing, tracing.id, registrationLocation);
+
                     resolve({tracing: tracing, errors: []});
                 }, 0);
             }

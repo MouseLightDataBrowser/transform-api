@@ -1,7 +1,7 @@
 import {DataTypes, HasManyGetAssociationsMixin, Sequelize} from "sequelize";
 
 import {BaseModel} from "../baseModel";
-import {TracingNode} from "./tracingNode";
+import {ITracingNode, TracingNode} from "./tracingNode";
 import {SwcTracing} from "../swc/swcTracing";
 import {CcfV25BrainCompartment} from "./ccfv25BrainCompartmentContents";
 import {CcfV30BrainCompartment} from "./ccfV30BrainCompartmentContents";
@@ -11,13 +11,20 @@ export enum ExportFormat {
     JSON = 1
 }
 
-export class Tracing extends BaseModel {
+export interface ITracing {
+    pathCount: number;
+    branchCount: number;
+    endCount: number;
+    nodes?: ITracingNode[];
+}
+
+export class Tracing extends BaseModel implements ITracing {
     public swcTracingId?: string;
     public registrationTransformId?: string;
-    public nodeCount?: number;
-    public pathCount?: number;
-    public branchCount?: number;
-    public endCount?: number;
+    public nodeCount: number;
+    public pathCount: number;
+    public branchCount: number;
+    public endCount: number;
     public transformedAt?: Date;
 
     public getNodes!: HasManyGetAssociationsMixin<TracingNode>;

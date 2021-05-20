@@ -1,8 +1,15 @@
-import {Sequelize, DataTypes, BelongsToGetAssociationMixin, HasManyGetAssociationsMixin} from "sequelize";
+import {
+    Sequelize,
+    DataTypes,
+    BelongsToGetAssociationMixin,
+    HasManyGetAssociationsMixin,
+    HasManySetAssociationsMixin
+} from "sequelize";
 
 import {BaseModel} from "../baseModel";
 import {TracingStructure} from "./tracingStructure";
 import {SwcNode} from "./swcNode";
+import {StructureIdentifier} from "./structureIdentifier";
 
 export interface ISwcTracingInput {
     id?: string;
@@ -16,7 +23,19 @@ export interface ISwcTracingInput {
     tracingStructureId?: string;
 }
 
-export class SwcTracing extends BaseModel {
+export interface ISwcTracing {
+    neuronId: string;
+    filename: string;
+    annotator: string;
+    fileComments: string;
+    offsetX: number;
+    offsetY: number;
+    offsetZ: number;
+
+    nodes?: SwcNode[];
+}
+
+export class SwcTracing extends BaseModel implements ISwcTracing {
     public id: string;
     public neuronId: string;
     public filename: string;
@@ -28,6 +47,27 @@ export class SwcTracing extends BaseModel {
 
     public getTracingStructure!: BelongsToGetAssociationMixin<TracingStructure>;
     public getNodes!: HasManyGetAssociationsMixin<SwcNode>;
+    public setNodes!: HasManySetAssociationsMixin<SwcNode, SwcNode["id"]>;
+
+    public nodes?: SwcNode[];
+
+    /**
+     * Load a tracing with the includes required for a transform operation to CCF space.
+     * @param id SWC tracing id
+     */
+    public static async findOneForTransform(id: string): Promise<SwcTracing> {
+        return SwcTracing.findByPk(id, {
+            include: [{
+                model: SwcNode,
+                as: "nodes",
+                include: [{
+                    model: StructureIdentifier,
+                    as: "structureIdentifier",
+                    attributes: ["id", "value"]
+                }]
+            }]
+        });
+    }
 }
 
 export const modelInit = (sequelize: Sequelize) => {
@@ -73,6 +113,6 @@ export const modelInit = (sequelize: Sequelize) => {
 };
 
 export const modelAssociate = () => {
-    SwcTracing.hasMany(SwcNode, {foreignKey: "swcTracingId", as: "Nodes"});
+    SwcTracing.hasMany(SwcNode, {foreignKey: "swcTracingId", as: "nodes"});
     SwcTracing.belongsTo(TracingStructure, {foreignKey: "tracingStructureId"});
 };

@@ -22,7 +22,13 @@ export type NeuronQueryInput =
     & WithInjectionsQueryInput
     & WithCompartmentQueryInput;
 
-export class Neuron extends BaseModel {
+export interface INeuron {
+    idNumber?: number;
+    idString?: string;
+    doi?: string;
+}
+
+export class Neuron extends BaseModel implements INeuron{
     public idNumber: number;
     public idString: string;
     public tag: string;

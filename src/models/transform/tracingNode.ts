@@ -18,17 +18,17 @@ export interface INodePage {
 }
 
 export interface ITracingNode {
-    swcNodeId: string;
-    sampleNumber: number;
-    parentNumber: number;
-    x: number;
-    y: number;
-    z: number;
-    radius: number;
-    lengthToParent: number;
-    structureIdentifierId: string;
-    brainAreaIdCcfV25: string;
-    brainAreaIdCcfV30: string;
+    swcNodeId?: string;
+    sampleNumber?: number;
+    parentNumber?: number;
+    x?: number;
+    y?: number;
+    z?: number;
+    radius?: number;
+    lengthToParent?: number;
+    structureIdentifierId?: string;
+    brainAreaIdCcfV25?: string;
+    brainAreaIdCcfV30?: string;
 }
 
 export class TracingNode extends BaseModel implements ITracingNode {

@@ -1,10 +1,11 @@
 import uuid = require("uuid");
+
 const hdf5 = require("hdf5").hdf5;
 const Access = require("hdf5/lib/globals").Access;
 
 import {BrainArea} from "../models/sample/brainArea";
-import {SwcTracing} from "../models/swc/swcTracing";
-import {Tracing} from "../models/transform/tracing";
+import {ISwcTracing} from "../models/swc/swcTracing";
+import {ITracing, Tracing} from "../models/transform/tracing";
 import {ServiceOptions} from "../options/serviceOptions";
 import {NrrdFile} from "../io/nrrd";
 import {CompartmentStatistics, ICompartmentStatistics} from "./compartmentStatistics";
@@ -12,7 +13,6 @@ import {ITracingNode, TracingNode} from "../models/transform/tracingNode";
 import {BrainCompartmentMutationData, CcfV25BrainCompartment} from "../models/transform/ccfv25BrainCompartmentContents";
 import {CcfV30BrainCompartment} from "../models/transform/ccfV30BrainCompartmentContents";
 import {StructureIdentifier} from "../models/swc/structureIdentifier";
-import {SwcNode} from "../models/swc/swcNode";
 
 export interface ITransformOperationProgressStatus {
     inputNodeCount?: number;
@@ -34,19 +34,17 @@ export interface ITransformOperationProgressDelegate {
 
 export interface ITransformOperationContext {
     compartmentMap: Map<number, BrainArea>;
-    swcTracing: SwcTracing;
+    swcTracing: ISwcTracing;
     transformPath: string;
-    tracingId: string | null;
-    isSwcInCcfSpace: boolean;
+    tracingId: string;
     logger?: ITransformOperationLogger;
     progressDelegate?: ITransformOperationProgressDelegate;
 }
 
+export type CompartmentStatisticsMap = Map<string, ICompartmentStatistics>;
+
 type Vector3 = [number, number, number];
 type Vector4 = [number, number, number, number];
-type Matrix4 = [Vector4, Vector4, Vector4, Vector4];
-
-const DefaultCompartmentTransformMatrix: Matrix4 = [[0.1, 0, 0, 0], [0, 0.1, 0, 0], [0, 0, 0.1, 0], [0, 0, 0, 1]];
 
 const HdfLocationTransformStride: Vector4 = [1, 1, 1, 1];
 const HdfLocationTransformCount: Vector4 = [3, 1, 1, 1];
@@ -57,47 +55,146 @@ const CompartmentTransformCount: Vector3 = [1, 1, 1];
 export class TransformOperation {
     private _context: ITransformOperationContext;
 
-    public constructor(context: ITransformOperationContext) {
-        this._context = context;
+    private readonly _outputTracing: ITracing;
+
+    private _tracingStatistics: ICompartmentStatistics;
+
+    private _ccfv25CompartmentMap: CompartmentStatisticsMap;
+    private _ccfv30CompartmentMap: CompartmentStatisticsMap;
+
+    public get Tracing(): ITracing {
+        return this._outputTracing;
     }
 
-    public async processTracing() {
-        this.logMessage("loading swc nodes");
+    public get Ccfv25CompartmentMap(): CompartmentStatisticsMap {
+        return this._ccfv25CompartmentMap;
+    }
 
+    public get Ccfv30CompartmentMap(): CompartmentStatisticsMap {
+        return this._ccfv30CompartmentMap;
+    }
+
+    public constructor(context: ITransformOperationContext) {
+        this._context = context;
+
+        this._outputTracing = {
+            pathCount: 0,
+            branchCount: 0,
+            endCount: 0,
+            nodes: []
+        };
+    }
+
+    public async processTracing(): Promise<void> {
+        this.transformNodeLocations();
+
+        this.assignNodeCompartments();
+
+        await this.updateTracing();
+    }
+
+    public transformNodeLocations(): void {
         const swcTracing = this._context.swcTracing;
-
-        const swcNodes = await swcTracing.getNodes({
-            include: [{
-                model: StructureIdentifier,
-                as: "structureIdentifier",
-                attributes: ["id", "value"]
-            }]
-        });
-
-        if (this._context.progressDelegate) {
-            this._context.progressDelegate({
-                tracingId: this._context.tracingId,
-                status: {inputNodeCount: swcNodes.length}
-            });
-        }
 
         const tracingId = this._context.tracingId;
 
-        const file = new hdf5.File(this._context.transformPath, Access.ACC_RDONLY);
+        this._tracingStatistics = new CompartmentStatistics();
 
-        const transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
+        let transformMatrix = null;
+        let dataset_ref = null;
+        let transformExtents = null;
+
+        if (this._context.transformPath) {
+            const file = new hdf5.File(this._context.transformPath, Access.ACC_RDONLY);
+
+            transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
+
+            dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
+                count: HdfLocationTransformCount
+            });
+
+            transformExtents = dataset_ref.dims;
+
+            this.logMessage(`transform extents (HDF5 order) ${transformExtents[0]} ${transformExtents[1]} ${transformExtents[2]} ${transformExtents[3]}`);
+        }
+
+        this._outputTracing.nodes = swcTracing.nodes.map((swcNode, index) => {
+            if (this._context.progressDelegate && (index % 100 === 0)) {
+                this._context.progressDelegate({
+                    tracingId,
+                    status: {outputNodeCount: index}
+                });
+            }
+
+            let transformedLocation = [NaN, NaN, NaN];
+
+            let lengthToParent = NaN;
+
+            try {
+                const sourceLoc = [swcNode.x + swcTracing.offsetX, swcNode.y + swcTracing.offsetY, swcNode.z + swcTracing.offsetZ, 1];
+
+                // If already in CCF coordinate space
+                transformedLocation = sourceLoc.slice(0, 3);
+
+                // If in Janelia space and requiring transformation
+                if (transformMatrix != null) {
+                    const transformedInput = this.matrixMultiply(sourceLoc, transformMatrix)
+
+                    let start = [0, ...transformedInput.reverse()];
+
+                    start = TransformOperation.clampDataSetLocation(start, transformExtents);
+
+                    const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
+                        start: start,
+                        stride: HdfLocationTransformStride,
+                        count: HdfLocationTransformCount
+                    });
+
+                    // Squeeze
+                    const transformedOutput = dataset.data[0][0][0];
+
+                    transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
+                }
+            } catch (err) {
+                this.logMessage(`${index}`);
+                this.logMessage(err);
+            }
+
+            this._tracingStatistics.addNode(swcNode.structureIdentifier.value);
+
+            return {
+                tracingId,
+                swcNodeId: swcNode.id,
+                sampleNumber: swcNode.sampleNumber,
+                x: transformedLocation[0],
+                y: transformedLocation[1],
+                z: transformedLocation[2],
+                radius: swcNode.radius,
+                parentNumber: swcNode.parentNumber,
+                structureIdentifierId: swcNode.structureIdentifier.id,
+                lengthToParent: lengthToParent
+            };
+        });
+
+        this.Tracing.pathCount = this._tracingStatistics.Path;
+        this.Tracing.branchCount = this._tracingStatistics.Branch;
+        this.Tracing.endCount = this._tracingStatistics.End;
+
+        if (dataset_ref != null) {
+            hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
+        }
+
+        this.logMessage("transform complete");
+    }
+
+    public assignNodeCompartments(): void {
+        if (!this._outputTracing.nodes) {
+            return;
+        }
 
         const brainAreaReferenceFile = new hdf5.File(ServiceOptions.ccfv25OntologyPath, Access.ACC_RDONLY);
 
         const brainTransformMatrix = brainAreaReferenceFile.getDatasetAttributes("OntologyAtlas")["Transformation_Matrix"];
-
-        const dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
-            count: HdfLocationTransformCount
-        });
-
-        const transformExtents = dataset_ref.dims;
-
-        this.logMessage(`transform extents (HDF5 order) ${transformExtents[0]} ${transformExtents[1]} ${transformExtents[2]} ${transformExtents[3]}`);
 
         const ba_dataset_ref = hdf5.openDataset(brainAreaReferenceFile.id, "OntologyAtlas", {
             count: CompartmentTransformCount
@@ -113,52 +210,22 @@ export class TransformOperation {
 
         this.logMessage(`brain lookup extents (nrrd30 order) ${nrrdContent.size[0]} ${nrrdContent.size[1]} ${nrrdContent.size[2]}`);
 
-        this.logMessage(`transforming ${swcNodes.length} nodes`);
+        this._ccfv25CompartmentMap = new Map<string, ICompartmentStatistics>();
+        this._ccfv30CompartmentMap = new Map<string, ICompartmentStatistics>();
 
-        const compartmentMapCcfv25 = new Map<string, ICompartmentStatistics>();
-        const compartmentMapCcfv30 = new Map<string, ICompartmentStatistics>();
 
-        const tracingCounts = new CompartmentStatistics();
-
-        let nodes: ITracingNode[] = swcNodes.map((swcNode, index) => {
-            if (this._context.progressDelegate && (index % 100 === 0)) {
-                this._context.progressDelegate({
-                    tracingId: this._context.tracingId,
-                    status: {outputNodeCount: index}
-                });
-            }
-
-            let transformedLocation = [NaN, NaN, NaN];
-
+        this._outputTracing.nodes.map((swcNode, index) => {
             let brainAreaIdCcfv25: string = null;
             let brainAreaIdCcfv30: string = null;
 
-            let lengthToParent = NaN;
-
             try {
-                const sourceLoc = [swcNode.x + swcTracing.offsetX, swcNode.y + swcTracing.offsetY, swcNode.z + swcTracing.offsetZ, 1];
-
-                const transformedInput = this.matrixMultiply(sourceLoc, transformMatrix);
-
-                let start = [0, ...transformedInput.reverse()];
-
-                start = this.clampDataSetLocation(start, transformExtents);
-
-                const dataset = hdf5.readDatasetHyperSlab(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset, dataset_ref.rank, {
-                    start: start,
-                    stride: HdfLocationTransformStride,
-                    count: HdfLocationTransformCount
-                });
-
-                // Squeeze
-                const transformedOutput = dataset.data[0][0][0];
-
-                transformedLocation = [sourceLoc[0] + transformedOutput[0], sourceLoc[1] + transformedOutput[1], sourceLoc[2] + transformedOutput[2]];
+                const transformedLocation = [swcNode.x, swcNode.y, swcNode.z];
 
                 // In HDF5 z, y, x order after reverse.
                 const brainAreaInput = this.matrixMultiply([...transformedLocation, 1], brainTransformMatrix).reverse();
+
                 // const brainAreaInput = [0, 0, 0];
-                if (this.isValidBrainDataSetLocation(brainAreaInput, brainLookupExtents)) {
+                if (TransformOperation.isValidBrainDataSetLocation(brainAreaInput, brainLookupExtents)) {
                     const brainAreaStructureId = hdf5.readDatasetHyperSlab(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset, ba_dataset_ref.rank, {
                         start: brainAreaInput,
                         stride: CompartmentTransformStride,
@@ -178,74 +245,45 @@ export class TransformOperation {
                 this.logMessage(err);
             }
 
-            this.populateCompartmentMap(brainAreaIdCcfv25, compartmentMapCcfv25, swcNode);
+            TransformOperation.populateCompartmentMap(brainAreaIdCcfv25, this._ccfv25CompartmentMap, swcNode);
 
-            this.populateCompartmentMap(brainAreaIdCcfv30, compartmentMapCcfv30, swcNode);
+            TransformOperation.populateCompartmentMap(brainAreaIdCcfv30, this._ccfv30CompartmentMap, swcNode);
 
-            tracingCounts.addNode(swcNode.structureIdentifier.value);
-
-            return {
-                tracingId,
-                swcNodeId: swcNode.id,
-                sampleNumber: swcNode.sampleNumber,
-                x: transformedLocation[0],
-                y: transformedLocation[1],
-                z: transformedLocation[2],
-                radius: swcNode.radius,
-                parentNumber: swcNode.parentNumber,
-                structureIdentifierId: swcNode.structureIdentifier.id,
-                brainAreaIdCcfV25: brainAreaIdCcfv25,
-                brainAreaIdCcfV30: brainAreaIdCcfv30,
-                lengthToParent: lengthToParent
-            };
+            swcNode.brainAreaIdCcfV25 = brainAreaIdCcfv25;
+            swcNode.brainAreaIdCcfV30 = brainAreaIdCcfv30;
         });
 
-        this.logMessage("transform complete");
-
-        hdf5.closeDataset(dataset_ref.memspace, dataset_ref.dataspace, dataset_ref.dataset);
+        this.logMessage("assignment complete");
 
         hdf5.closeDataset(ba_dataset_ref.memspace, ba_dataset_ref.dataspace, ba_dataset_ref.dataset);
 
         nrrdContent.close();
+    }
 
-        if (!tracingId) {
-            this.logMessage(`completed ${nodes.length} nodes`);
-            this.logMessage(`resolved ${compartmentMapCcfv25.size} v25 node compartments`);
-
-            for (const entry of compartmentMapCcfv25.entries()) {
-                this.logMessage(`\t${entry[0]} ${entry[1].Node}`);
-            }
-
-            this.logMessage(`resolved ${compartmentMapCcfv30.size} v30 node compartments`);
-
-            for (const entry of compartmentMapCcfv30.entries()) {
-                this.logMessage(`\t${entry[0]} ${entry[1].Node}`);
-            }
-
-            return true;
+    public async updateTracing(): Promise<void> {
+        if (this._context.tracingId === null) {
+            return;
         }
 
-        const tracing = await Tracing.findOne({where: {id: tracingId}});
+        const tracing = await Tracing.findOne({where: {id: this._context.tracingId}});
 
         await TracingNode.destroy({where: {tracingId: tracing.id}, force: true});
 
-        await TracingNode.bulkCreate(nodes);
+        await TracingNode.bulkCreate(this._outputTracing.nodes);
 
         await tracing.update({
             transformedAt: new Date(),
-            nodeCount: nodes.length,
-            pathCount: tracingCounts.Path,
-            branchCount: tracingCounts.Branch,
-            endCount: tracingCounts.End
+            nodeCount: this._outputTracing.nodes.length,
+            pathCount: this._tracingStatistics.Path,
+            branchCount: this._tracingStatistics.Branch,
+            endCount: this._tracingStatistics.End
         });
 
-        this.logMessage(`inserted ${nodes.length} nodes`);
+        this.logMessage(`inserted ${this._outputTracing.nodes.length} nodes`);
 
-        await this.updateBrainCompartmentContent(CcfV25BrainCompartment, compartmentMapCcfv25, tracing.id);
+        await this.updateBrainCompartmentContent(CcfV25BrainCompartment, this._ccfv25CompartmentMap, tracing.id);
 
-        await this.updateBrainCompartmentContent(CcfV30BrainCompartment, compartmentMapCcfv30, tracing.id);
-
-        return true;
+        await this.updateBrainCompartmentContent(CcfV30BrainCompartment, this._ccfv30CompartmentMap, tracing.id);
     }
 
     private findCompartmentId(structureId: number): string {
@@ -256,7 +294,7 @@ export class TransformOperation {
         return null;
     }
 
-    private populateCompartmentMap(brainAreaId: string, compartmentMap: Map<string, ICompartmentStatistics>, swcNode: SwcNode) {
+    private static populateCompartmentMap(brainAreaId: string, compartmentMap: Map<string, ICompartmentStatistics>, node: ITracingNode) {
         if (brainAreaId) {
             if (!compartmentMap.has(brainAreaId)) {
                 compartmentMap.set(brainAreaId, new CompartmentStatistics())
@@ -264,7 +302,7 @@ export class TransformOperation {
 
             let counts = compartmentMap.get(brainAreaId);
 
-            counts.addNode(swcNode.structureIdentifier.value);
+            counts.addNode(StructureIdentifier.valueForId(node.structureIdentifierId));
         }
     }
 
@@ -313,7 +351,7 @@ export class TransformOperation {
         }).slice(0, 3);
     }
 
-    private clampDataSetLocation(location: number[], extents: number[]): number[] {
+    private static clampDataSetLocation(location: number[], extents: number[]): number[] {
         // Stride is assumed to be 1, so check that location is clamped to extents.
 
         location[1] = Math.min(Math.max(0, location[1]), extents[1] - 1);
@@ -323,7 +361,7 @@ export class TransformOperation {
         return location;
     }
 
-    private isValidBrainDataSetLocation(location, extents): boolean {
+    private static isValidBrainDataSetLocation(location, extents): boolean {
         // Stride is assumed to be 1, so check that location is than extents.
         return (location[0] < extents[0]) && (location[1] < extents[1]) && (location[2] < extents[2]);
     }

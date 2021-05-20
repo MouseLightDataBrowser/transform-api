@@ -15,34 +15,43 @@ export enum StructureIdentifiers {
 
 export class StructureIdentifier extends BaseModel {
     public name: string;
-    public value: StructureIdentifiers;
+    public value: StructureIdentifiers | number;
     public mutable: boolean;
 
     public getNodes!: HasManyGetAssociationsMixin<SwcNode>;
 
-    public static valueIdMap = new Map<number, string>();
+    // public static valueIdMap = new Map<number, string>();
     public static idValueMap = new Map<string, number>();
+    public static valueInstanceMap = new Map<number, StructureIdentifier>();
 
     public static async buildIdValueMap()  {
-        if (this.valueIdMap.size === 0) {
+        if (this.idValueMap.size === 0) {
             const all = await StructureIdentifier.findAll({});
             all.forEach(s => {
-                this.valueIdMap.set(s.value, s.id);
+                // this.valueIdMap.set(s.value, s.id);
                 this.idValueMap.set(s.id, s.value);
+                this.valueInstanceMap.set(s.value, s);
             });
         }
     }
 
-    public static idForValue(val: number) {
-        return this.valueIdMap.get(val);
+    public static idForValue(val: number): string {
+        return this.forValue(val)?.id;
     }
 
-    public static valueForId(id: string) {
+    public static valueForId(id: string): number {
         return this.idValueMap.get(id);
     }
 
-    public static structuresAreLoaded () {
-        return this.valueIdMap.size > 0;
+    public static forValue(val: number): StructureIdentifier {
+        if (!this.valueInstanceMap.has(val)) {
+            this.valueInstanceMap.set(val, new StructureIdentifier({
+                name: "unknown",
+                value: val,
+                mutable: false
+            }));
+        }
+        return this.valueInstanceMap.get(val);
     }
 
     public static countColumnName(s: number | string | StructureIdentifier): string {
@@ -50,7 +59,7 @@ export class StructureIdentifier extends BaseModel {
             return null;
         }
 
-        let value: number = null;
+        let value: number;
 
         if (typeof s === "number") {
             value = s;

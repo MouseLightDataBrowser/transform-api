@@ -4,7 +4,6 @@ const debug = require("debug")("mnb:transform:examples:transform-only");
 
 import {RemoteDatabaseClient} from "../src/data-access/remoteDatabaseClient";
 import {SequelizeOptions} from "../src/options/databaseOptions";
-import {performNodeMap} from "../src/transform/nodeWorker";
 import {SwcTracing} from "../src/models/swc/swcTracing";
 import {Tracing} from "../src/models/transform/tracing";
 import {RegistrationTransform} from "../src/models/sample/transform";
