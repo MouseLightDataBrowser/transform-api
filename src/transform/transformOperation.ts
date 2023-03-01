@@ -109,6 +109,8 @@ export class TransformOperation {
 
             transformMatrix = file.getDatasetAttributes("DisplacementField")["Transformation_Matrix"];
 
+            this.logMessage(`transform matrix: ${transformMatrix}`);
+
             dataset_ref = hdf5.openDataset(file.id, "DisplacementField", {
                 count: HdfLocationTransformCount
             });
@@ -140,6 +142,10 @@ export class TransformOperation {
                 if (transformMatrix != null) {
                     const transformedInput = this.matrixMultiply(sourceLoc, transformMatrix)
 
+                    if (transformedInput == null) {
+                        return null;
+                    }
+
                     let start = [0, ...transformedInput.reverse()];
 
                     start = TransformOperation.clampDataSetLocation(start, transformExtents);
@@ -158,6 +164,8 @@ export class TransformOperation {
             } catch (err) {
                 this.logMessage(`${index}`);
                 this.logMessage(err);
+
+                return null;
             }
 
             this._tracingStatistics.addNode(swcNode.structureIdentifier.value);
@@ -174,7 +182,7 @@ export class TransformOperation {
                 structureIdentifierId: swcNode.structureIdentifier.id,
                 lengthToParent: lengthToParent
             };
-        });
+        }).filter(s => s != null);
 
         this.Tracing.pathCount = this._tracingStatistics.Path;
         this.Tracing.branchCount = this._tracingStatistics.Branch;
@@ -262,6 +270,12 @@ export class TransformOperation {
 
     public async updateTracing(): Promise<void> {
         if (this._context.tracingId === null) {
+            this.logMessage(`can not update tracing without context id`);
+            return;
+        }
+
+        if (this._outputTracing.nodes.length == 0) {
+            this.logMessage(`skipping update for zero valid nodes (tracing id ${this._context.tracingId})`);
             return;
         }
 
@@ -344,6 +358,12 @@ export class TransformOperation {
      * To date, the only matrix operation we need, so not pulling in something like math.js.
      */
     private matrixMultiply(loc, transform) {
+        if (transform == null) {
+            this.logMessage("transform matrix is undefined");
+
+            return null;
+        }
+
         return transform.map((row) => {
             return Math.ceil(row.reduce((sum, value, col) => {
                 return sum + (loc[col] * value);
